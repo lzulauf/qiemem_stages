@@ -40,6 +40,16 @@ struct GateInputDefinition {
   uint16_t pin;
 };
 
+#ifdef FLIPPED
+const GateInputDefinition gate_input_definition[] = {
+  { GPIOC, GPIO_Pin_7 },
+  { GPIOC, GPIO_Pin_8 },
+  { GPIOA, GPIO_Pin_8 },
+  { GPIOA, GPIO_Pin_9 },
+  { GPIOA, GPIO_Pin_10 },
+  { GPIOA, GPIO_Pin_11 },
+};
+#else
 const GateInputDefinition gate_input_definition[] = {
   { GPIOA, GPIO_Pin_11 },
   { GPIOA, GPIO_Pin_10 },
@@ -48,6 +58,7 @@ const GateInputDefinition gate_input_definition[] = {
   { GPIOC, GPIO_Pin_8 },
   { GPIOC, GPIO_Pin_7 },
 };
+#endif
 
 void GateInputs::Init() {
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);

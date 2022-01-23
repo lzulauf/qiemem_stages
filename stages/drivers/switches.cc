@@ -39,6 +39,16 @@ struct SwitchDefinition {
   uint16_t pin;
 };
 
+#ifdef FLIPPED
+const SwitchDefinition switch_definitions[] = {
+  { GPIOA, GPIO_Pin_1 },
+  { GPIOA, GPIO_Pin_0 },
+  { GPIOC, GPIO_Pin_3 },
+  { GPIOC, GPIO_Pin_2 },
+  { GPIOC, GPIO_Pin_1 },
+  { GPIOC, GPIO_Pin_0 }
+};
+#else
 const SwitchDefinition switch_definitions[] = {
   { GPIOC, GPIO_Pin_0 },
   { GPIOC, GPIO_Pin_1 },
@@ -47,6 +57,8 @@ const SwitchDefinition switch_definitions[] = {
   { GPIOA, GPIO_Pin_0 },
   { GPIOA, GPIO_Pin_1 }
 };
+
+#endif
 
 void Switches::Init() {
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);

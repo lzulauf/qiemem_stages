@@ -57,12 +57,20 @@ void ChainState::Init(SerialLink* left, SerialLink* right, const Settings& setti
   STATIC_ASSERT(sizeof(Packet) == kPacketSize, BAD_PACKET_SIZE);
 
   left_->Init(
+#ifdef FLIPPED
+      SERIAL_LINK_DIRECTION_RIGHT,
+#else
       SERIAL_LINK_DIRECTION_LEFT,
+#endif
       115200 * 8,
       left_rx_packet_[0].bytes,
       kPacketSize);
   right_->Init(
+#ifdef FLIPPED
+      SERIAL_LINK_DIRECTION_LEFT,
+#else
       SERIAL_LINK_DIRECTION_RIGHT,
+#endif
       115200 * 8,
       right_rx_packet_[0].bytes,
       kPacketSize);

@@ -43,7 +43,10 @@ Check out this great video overview of the fork as well as of the extended seque
 Download and installation
 -------------------------
 
-📦 Download the **[latest WAV file here][2]** and follow the [firmware update procedure here][3]. Source code is available [here][8]. joeSeggiola's original source code is available [here][9].
+📦 Download the **[latest WAV file here][2]** and follow the [firmware update procedure here][3]. Source code is available [here][8].
+joeSeggiola's original source code is available [here][9].
+stages-bipolar-vX.X.X.wav contains the normal version of the firmware while stages-bipolar-flipped-vX.X.X.wav contains the flipped version for using Stages upside-down.
+Note that you press the same button to enter firmware-update mode regardless of using the normal or flipped version: the rightmost button when right-side-up / the leftmost button when upside-down.
 
 IMPORTANT: Installation will clear the module settings if coming from a different firmware. Right after updating from an earlier version of this fork, the stock Stages firmware or joeSeggiola's version, Stages may continuously cycle between green, orange, and red LEDs. Turning the module off and on again should restore functionality. This happens because this fork expands the amount of data stored for each segment, so will be incompatible with the settings stored from a different firmware. If you encounter problems, please let me know, either in a GitHub issue or otherwise.
 
@@ -402,7 +405,7 @@ Fork:
     - Fix clocked LFO performance issues to allow for six clocked LFOs.
     - Add bandlimiting to audio-rate LFOs to reduce aliasing on the original LFO shapes.
     - Make slow LFO mode correctly chain with standard mode, not advanced mode.
-    
+    - Add flipped build for using Stages upside down. Huge thank you to James Everitt for implementing the driver changes and to chadwick for help testing!
 - [v1.2.2](https://github.com/qiemem/eurorack/files/10714684/stages-bipolar-v1.2.2.zip) (never officially released)
     - [Visual cheatsheet](https://raw.githubusercontent.com/qiemem/eurorack/bipolar/stages/resources/Stages%20Qiemem%20Cheatsheets.pdf) added by Philip Belesky! #44.
     - Rework random segments to use proper, variable-shape random LFO behavior. Suggested by breach on the old MI forum (pour one out). #3

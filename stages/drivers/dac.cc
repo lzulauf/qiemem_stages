@@ -33,6 +33,16 @@
 namespace stages {
   
 /* static */
+#ifdef FLIPPED
+int Dac::channel_selection_bits_[kNumChannels] = {
+  0x0300 | (4 << 4),
+  0x0300 | (0 << 4),
+  0x0300 | (2 << 4),
+  0x0300 | (6 << 4),
+  0x0300 | (1 << 4),
+  0x0300 | (3 << 4),
+};
+#else
 int Dac::channel_selection_bits_[kNumChannels] = {
   0x0300 | (3 << 4),
   0x0300 | (1 << 4),
@@ -41,6 +51,7 @@ int Dac::channel_selection_bits_[kNumChannels] = {
   0x0300 | (0 << 4),
   0x0300 | (4 << 4),
 };
+#endif
 
 /* static */
 Dac* Dac::instance_;

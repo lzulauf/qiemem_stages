@@ -46,6 +46,10 @@ PACKAGES       = stages \
 RESOURCES      = stages/resources
 
 TOOLCHAIN_PATH ?= /usr/local/arm-4.8.3/
+ifdef FLIPPED
+	PROJECT_CONFIGURATION = -DFLIPPED
+	TARGET:=$(TARGET)-flipped
+endif
 
 include stmlib/makefile.inc
 

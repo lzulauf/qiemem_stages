@@ -45,6 +45,26 @@ const uint16_t kPinClk = GPIO_Pin_6;
 const uint16_t kPinEnable = GPIO_Pin_7;
 const uint16_t kPinData = GPIO_Pin_5;
 
+#ifdef FLIPPED
+const SliderLedDefinition slider_led_definition[kNumLEDs] = {
+  { GPIOB, GPIO_Pin_2 },
+  { GPIOA, GPIO_Pin_2 },
+  { GPIOC, GPIO_Pin_15 },
+  { GPIOC, GPIO_Pin_14 },
+  { GPIOC, GPIO_Pin_13 },
+  { GPIOA, GPIO_Pin_12 },
+};
+
+/* static */
+const uint16_t red_bitmask[] = {
+  1 << 12, 1 << 10, 1 << 9, 1 << 2, 1 << 7, 1 << 5
+};
+
+/* static */
+const uint16_t green_bitmask[] = {
+  1 << 13, 1 << 11, 1 << 8, 1 << 3, 1 << 6, 1 << 4
+};
+#else
 const SliderLedDefinition slider_led_definition[kNumLEDs] = {
   { GPIOA, GPIO_Pin_12 },
   { GPIOC, GPIO_Pin_13 },
@@ -53,7 +73,6 @@ const SliderLedDefinition slider_led_definition[kNumLEDs] = {
   { GPIOA, GPIO_Pin_2 },
   { GPIOB, GPIO_Pin_2 }
 };
-
 
 /* static */
 const uint16_t red_bitmask[] = {
@@ -64,6 +83,7 @@ const uint16_t red_bitmask[] = {
 const uint16_t green_bitmask[] = {
   1 << 4, 1 << 6, 1 << 3, 1 << 8, 1 << 11, 1 << 13
 };
+#endif
 
 
 void Leds::Init() {

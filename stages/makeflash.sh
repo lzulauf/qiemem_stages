@@ -8,18 +8,21 @@
 # Configuration
 ALSADEVICE="sysdefault" # Audio device used for playing the WAV file
 
-# Build command
-COMMAND=""
-if [[ $* == *clean* ]]; then
-	COMMAND="$COMMAND make -f stages/makefile clean &&"
-fi
-COMMAND="$COMMAND make -f stages/makefile"
-if [[ $* == *size* ]]; then
-	COMMAND="$COMMAND && make -f stages/makefile size"
-fi
-if [[ $* == *wav* ]]; then
-	COMMAND="$COMMAND && make -f stages/makefile wav"
-fi
+echo $*
+
+# # Build command
+# COMMAND=""
+# if [[ $* == *clean* ]]; then
+# 	COMMAND="$COMMAND make -f stages/makefile clean &&"
+# fi
+# COMMAND="$COMMAND make -f stages/makefile"
+# if [[ $* == *size* ]]; then
+# 	COMMAND="$COMMAND && make -f stages/makefile size"
+# fi
+# if [[ $* == *wav* ]]; then
+# 	COMMAND="$COMMAND && make -f stages/makefile wav"
+# fi
+COMMAND="make -f stages/makefile $*"
 
 # Show command
 echo
