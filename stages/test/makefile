@@ -40,7 +40,7 @@ $(BUILD_DIR)%.d: %.cc
 	g++ -MM -DTEST -I. $< -MF $@ -MT $(@:.d=.o)
 
 stages_test:  $(OBJS)
-	g++ -g -o $(TARGET) $(OBJS) -lm -lprofiler -L/opt/local/lib
+	g++ -g -o $(TARGET) $(OBJS) -Wl,-no-pie -lm -lprofiler -L/opt/local/lib
 
 stages_perf: $(PERF_OBJS)
 	g++ -g -o $(PERF_TARGET) $(PERF_OBJS) -lm -L/opt/local/lib
