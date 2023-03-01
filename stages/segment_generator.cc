@@ -575,7 +575,6 @@ void SegmentGenerator::ProcessOscillator(
     float f = 96.0f * (parameters_[0].primary - 0.5f);
     CONSTRAIN(f, -128.0f, 127.0f);
     frequency = SemitonesToRatio(f) * root_note / kSampleRate;
-    // printf("%d %f %f %f ", range, parameters_[0].primary, f, frequency);
     switch (range) {
       case segment::RANGE_SLOW:
         frequency /= 16.0f;
@@ -584,10 +583,8 @@ void SegmentGenerator::ProcessOscillator(
         frequency *= 64.0f;
         break;
       default:
-        // It's good where it is
         break;
     }
-    // printf("%f\n", frequency);
   }
 
   if (range == segment::RANGE_FAST && segments_[0].bipolar) {
@@ -1144,8 +1141,9 @@ void SegmentGenerator::ShapeLFO(
     triangle -= 0.5f;
     CONSTRAIN(triangle, -plateau, plateau);
     triangle = triangle * normalization;
-    //float sine = Interpolate(lut_sine, phase < 0.25f ? phase + 0.75f : phase - 0.25f, 1024.0f);
-    float sine = InterpolateWrap(lut_sine, phase + 0.75f, 1024.0f);
+    // Using Interpolate instead of InterpolateWrap gives about about about a 20ms speedup in benchmarks and allows an extra syned segment
+    // float sine = InterpolateWrap(lut_sine, phase + 0.75f, 1024.0f);
+    float sine = Interpolate(lut_sine, phase < 0.25f ? phase + 0.75f : phase - 0.25f, 1024.0f);
     out->phase = *input_phase;
     out->value = amplitude * Crossfade(triangle, sine, sine_amount) + offset;
     out->segment = phase < 0.5f ? 0 : 1;

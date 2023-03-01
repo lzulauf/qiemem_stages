@@ -73,6 +73,27 @@ void timeit(T code, size_t runs) {
   }
 }
 
+void TimeFreeLFO() {
+  cout << "Free LFO" << endl;
+  timeit(
+      [] {
+        SegmentGeneratorTest t;
+        segment::Configuration configuration = {segment::TYPE_RAMP, true, false,
+                                                segment::RANGE_DEFAULT};
+        t.generator()->Configure(false, &configuration, 1);
+
+        t.set_segment_parameters(0, 0.5f, 0.5f);
+        const size_t size = 8;
+        size_t duration = (1500 * 6 + 3000 * 2) * 1000 / size;
+        while (duration--) {
+          SegmentGenerator::Output out[size];
+
+          t.generator()->Process(0, out, size);
+        }
+        return 0;
+      },
+      7);
+}
 void TimeTapLFO() {
   cout << "Tap LFO" << endl;
   timeit(
@@ -206,8 +227,9 @@ void TimeQuantizer() {
 }
 
 int main() {
+  TimeFreeLFO();
   TimeTapLFO();
-  TimeRandomBrownianTapLFO();
-  TimeRandomSineTapLFO();
-  TimeRandomSplineTapLFO();
+  // TimeRandomBrownianTapLFO();
+  // TimeRandomSineTapLFO();
+  // TimeRandomSplineTapLFO();
 }
