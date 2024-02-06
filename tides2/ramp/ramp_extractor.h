@@ -90,6 +90,8 @@ class RampExtractor {
   float prediction_error_[kMaxPatternPeriod + 1];
   float predicted_period_[kMaxPatternPeriod + 1];
   float average_pulse_width_;
+  float apw_sum_;
+  float last_pw_;
   size_t apw_match_count_;
 
   float train_phase_;

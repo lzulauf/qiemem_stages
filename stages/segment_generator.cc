@@ -1126,6 +1126,14 @@ float spline_lfo(const float attack, const float attack_phase_mult,
 void SegmentGenerator::ShapeSplineLFO(float shape, const float* input_phase, SegmentGenerator::Output* out, size_t size, bool bipolar) {
   const float ramp_boundary = 0.333f;
   const float trap_boundary = 0.667f;
+  // The following settings reproduce the response curve of the original LFO
+  // shape control, but seem to have a measurable performance impact in my
+  // testing. The above settings felt okay in practice, so sticking with them
+  // for performance and simplicity.
+  // shape -= 0.5f;
+  // shape = (2.0f + 9.999999f * shape / (1.0f + 3.0f * fabs(shape))) / 4.0f;
+  // const float ramp_boundary = 0.25f;
+  // const float trap_boundary = 0.75f;
   float attack, pw1, release, sharpness;
   if (shape <= ramp_boundary) {
     attack = shape / (2.0f * ramp_boundary);

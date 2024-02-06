@@ -88,13 +88,20 @@ void RampExtractor::Reset() {
 
 void RampExtractor::UpdateAveragePulseWidth(float tolerance) {
   float cpw = history_[current_pulse_].pulse_width;
-  if (IsWithinTolerance(average_pulse_width_, cpw, tolerance)) {
-    apw_match_count_ = min(kHistorySize, apw_match_count_ + 1);
-    float n = static_cast<float>(apw_match_count_);
-    average_pulse_width_ = ((n - 1.0f) * average_pulse_width_ + cpw) / n;
+  if (IsWithinTolerance(apw_sum_, cpw * apw_match_count_, tolerance)) {
+    apw_sum_ += cpw;
+    apw_match_count_++;
+    if (apw_match_count_ > kHistorySize) {
+      apw_sum_ -= last_pw_;
+      apw_match_count_ = kHistorySize;
+    }
+    if (apw_match_count_ == kHistorySize) {
+      average_pulse_width_ = apw_sum_ / static_cast<float>(kHistorySize);
+    }
   } else {
     apw_match_count_ = 1;
-    average_pulse_width_ = cpw;
+    apw_sum_ = cpw;
+    average_pulse_width_ = 0.0f;
   }
 }
 float RampExtractor::ComputeAveragePulseWidth(float tolerance) const {
@@ -122,8 +129,8 @@ float RampExtractor::PredictNextPeriod() {
   SLOPE(prediction_error_[0], error_sq, 0.7f, 0.2f);
   // Skipping the lpf let's it recover more quickly after a miss, but does
   // make it more sensitive to noise. So just trying it.
-  // ONE_POLE(predicted_period_[0], last_period, 0.5f);
-  predicted_period_[0] = last_period;
+  ONE_POLE(predicted_period_[0], last_period, 0.5f);
+  // predicted_period_[0] = last_period;
 
   for (int i = 1; i <= kMaxPatternPeriod; ++i) {
     float error = predicted_period_[i] - last_period;
@@ -227,6 +234,8 @@ inline float RampExtractor::ProcessInternal(
             p.pulse_width = static_cast<float>(p.on_duration) / \
                 static_cast<float>(p.total_duration);
             UpdateAveragePulseWidth(kPulseWidthTolerance);
+            // average_pulse_width_ =
+            //     ComputeAveragePulseWidth(kPulseWidthTolerance);
             if (p.on_duration < 32) {
               average_pulse_width_ = 0.0f;
             }
@@ -251,6 +260,9 @@ inline float RampExtractor::ProcessInternal(
         current_pulse_ = (current_pulse_ + 1) % kHistorySize;
       }
       // Record a new pulse.
+      if (apw_match_count_ == kHistorySize) {
+        last_pw_ = history_[current_pulse_].pulse_width;
+      }
       history_[current_pulse_].on_duration = 0;
       history_[current_pulse_].total_duration = 0;
     }
@@ -278,7 +290,8 @@ inline float RampExtractor::ProcessInternal(
       }
       *ramp++ = train_phase_;
     } else {
-      if ((flags & GATE_FLAG_FALLING) && apw_match_count_ >= kHistorySize) {
+      if ((flags & GATE_FLAG_FALLING)
+          && average_pulse_width_ > 0.0f) {
         float t_on = static_cast<float>(
             history_[current_pulse_].on_duration);
         float next = max_train_phase_ - static_cast<float>(
