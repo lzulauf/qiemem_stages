@@ -626,7 +626,8 @@ void SegmentGenerator::ProcessOscillator(
         ramp[i] = phase_;
       }
     }
-    ShapeLFO(parameters_[0].secondary, ramp, out, size, segments_[0].bipolar);
+    ShapeSplineLFO(parameters_[0].secondary, ramp, out, size, segments_[0].bipolar);
+    // ShapeLFO(parameters_[0].secondary, ramp, out, size, segments_[0].bipolar);
   }
   active_segment_ = out[size - 1].segment;
 }
@@ -704,7 +705,7 @@ void SegmentGenerator::ProcessPortamento(
 // y1 - value at t = 0
 // k1 - slope at t = 0
 // y2 - value at t = 1
-// k2 - slope at t =
+// k2 - slope at t = 1
 float spline(float y1, float k1, float y2, float k2, float t) {
   float r = 1.0f - t;
   float d = y2 - y1;
@@ -1107,7 +1108,59 @@ void SegmentGenerator::ProcessSlave(
   }
 }
 
+float spline_lfo(const float attack, const float attack_phase_mult,
+                 const float pw1, const float release,
+                 const float release_phase_mult, const float sharpness,
+                 float t) {
+  if (t <= attack + pw1) {
+    if (t > attack) return 1.0f;
+    return spline(-1.0f, sharpness, 1.0f, sharpness, t * attack_phase_mult);
+  } else {
+    t -= attack + pw1;
+    if (t >= release) return -1.0f;
+    return spline(1.0f, -sharpness, -1.0f, -sharpness, t * release_phase_mult);
+  }
+}
+
 /* static */
+void SegmentGenerator::ShapeSplineLFO(float shape, const float* input_phase, SegmentGenerator::Output* out, size_t size, bool bipolar) {
+  const float ramp_boundary = 0.333f;
+  const float trap_boundary = 0.667f;
+  float attack, pw1, release, sharpness;
+  if (shape <= ramp_boundary) {
+    attack = shape / (2.0f * ramp_boundary);
+    pw1 = 0.0f;
+    release = 1.0f - attack;
+    sharpness = 2.0f;
+  } else if (shape <= trap_boundary) {
+    attack = 0.5f;
+    pw1 = 0.0f;
+    release = 0.5f;
+    sharpness = 2.0f * fabs(shape - 0.5f) / (0.5f - ramp_boundary);
+  } else {
+    const float pw = (shape - trap_boundary) / (1.0f - trap_boundary);
+    attack = (1.0f - pw) * 0.5f;
+    pw1 = pw * 0.5f;
+    release = attack;
+    sharpness = 2.0f;
+  }
+  const float attack_phase_mult = attack == 0.0f ? 1.0f : 1.0f / attack;
+  const float release_phase_mult = release == 0.0f ? 1.0f : 1.0f / release;
+
+  const float amplitude = bipolar ? 10.0f / 16.0f : 0.5f;
+  const float offset = bipolar ? 0.0f : 0.5f;
+  while (size--) {
+    const float phase = *input_phase;
+    out->phase = phase;
+    out->value = amplitude * spline_lfo(attack, attack_phase_mult, pw1, release,
+                                        release_phase_mult, sharpness, phase) +
+                 offset;
+    out->segment = phase < 0.5f ? 0 : 1;
+    ++out;
+    ++input_phase;
+  }
+}
+
 void SegmentGenerator::ShapeLFO(
     float shape,
     const float* input_phase,
@@ -1141,8 +1194,9 @@ void SegmentGenerator::ShapeLFO(
     triangle -= 0.5f;
     CONSTRAIN(triangle, -plateau, plateau);
     triangle = triangle * normalization;
-    // Using Interpolate instead of InterpolateWrap gives about about about a 20ms speedup in benchmarks and allows an extra syned segment
-    // float sine = InterpolateWrap(lut_sine, phase + 0.75f, 1024.0f);
+    // Using Interpolate instead of InterpolateWrap gives about about about a
+    // 20ms speedup in benchmarks and allows an extra synced segment  float
+    // sine = InterpolateWrap(lut_sine, phase + 0.75f, 1024.0f);
     float sine = Interpolate(lut_sine, phase < 0.25f ? phase + 0.75f : phase - 0.25f, 1024.0f);
     out->phase = *input_phase;
     out->value = amplitude * Crossfade(triangle, sine, sine_amount) + offset;

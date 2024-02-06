@@ -86,6 +86,17 @@ void RampExtractor::Reset() {
   prediction_error_[0] = 0.0f;
 }
 
+void RampExtractor::UpdateAveragePulseWidth(float tolerance) {
+  float cpw = history_[current_pulse_].pulse_width;
+  if (IsWithinTolerance(average_pulse_width_, cpw, tolerance)) {
+    apw_match_count_ = min(kHistorySize, apw_match_count_ + 1);
+    float n = static_cast<float>(apw_match_count_);
+    average_pulse_width_ = ((n - 1.0f) * average_pulse_width_ + cpw) / n;
+  } else {
+    apw_match_count_ = 1;
+    average_pulse_width_ = cpw;
+  }
+}
 float RampExtractor::ComputeAveragePulseWidth(float tolerance) const {
   float sum = 0.0f;
   for (size_t i = 0; i < kHistorySize; ++i) {
@@ -102,26 +113,33 @@ float RampExtractor::ComputeAveragePulseWidth(float tolerance) const {
 float RampExtractor::PredictNextPeriod() {
   float last_period = static_cast<float>(
       history_[current_pulse_].total_duration);
-  
+
+  // I found breaking i=0 out of the loop to avoid the extra conditional did
+  // improve performance a good bit.
   int best_pattern_period = 0;
-  for (int i = 0; i <= kMaxPatternPeriod; ++i) {
+  float error = predicted_period_[0] - last_period;
+  float error_sq = error * error;
+  SLOPE(prediction_error_[0], error_sq, 0.7f, 0.2f);
+  // Skipping the lpf let's it recover more quickly after a miss, but does
+  // make it more sensitive to noise. So just trying it.
+  // ONE_POLE(predicted_period_[0], last_period, 0.5f);
+  predicted_period_[0] = last_period;
+
+  for (int i = 1; i <= kMaxPatternPeriod; ++i) {
     float error = predicted_period_[i] - last_period;
     float error_sq = error * error;
     SLOPE(prediction_error_[i], error_sq, 0.7f, 0.2f);
 
-    if (i == 0) {
-      ONE_POLE(predicted_period_[0], last_period, 0.5f);
-    } else {
-      size_t t = current_pulse_ + 1 + kHistorySize - i;
-      predicted_period_[i] = history_[t % kHistorySize].total_duration;
-    }
-    
+    size_t t = current_pulse_ + 1 + kHistorySize - i;
+    predicted_period_[i] = history_[t % kHistorySize].total_duration;
+
     if (prediction_error_[i] < prediction_error_[best_pattern_period]) {
       best_pattern_period = i;
     }
   }
   return predicted_period_[best_pattern_period];
 }
+
 
 float RampExtractor::Process(
     bool smooth_audio_rate_tracking,
@@ -208,8 +226,7 @@ inline float RampExtractor::ProcessInternal(
           } else {
             p.pulse_width = static_cast<float>(p.on_duration) / \
                 static_cast<float>(p.total_duration);
-            average_pulse_width_ = ComputeAveragePulseWidth(
-                kPulseWidthTolerance);
+            UpdateAveragePulseWidth(kPulseWidthTolerance);
             if (p.on_duration < 32) {
               average_pulse_width_ = 0.0f;
             }
@@ -261,8 +278,7 @@ inline float RampExtractor::ProcessInternal(
       }
       *ramp++ = train_phase_;
     } else {
-      if ((flags & GATE_FLAG_FALLING) &&
-          average_pulse_width_ > 0.0f) {
+      if ((flags & GATE_FLAG_FALLING) && apw_match_count_ >= kHistorySize) {
         float t_on = static_cast<float>(
             history_[current_pulse_].on_duration);
         float next = max_train_phase_ - static_cast<float>(
