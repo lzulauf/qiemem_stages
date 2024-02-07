@@ -117,6 +117,11 @@ float RampExtractor::ComputeAveragePulseWidth(float tolerance) const {
   return sum / static_cast<float>(kHistorySize);
 }
 
+inline float sq_error(float x, float y) {
+  float err = x - y;
+  return err * err;
+}
+
 float RampExtractor::PredictNextPeriod() {
   float last_period = static_cast<float>(
       history_[current_pulse_].total_duration);
@@ -124,17 +129,17 @@ float RampExtractor::PredictNextPeriod() {
   // I found breaking i=0 out of the loop to avoid the extra conditional did
   // improve performance a good bit.
   int best_pattern_period = 0;
-  float error = predicted_period_[0] - last_period;
-  float error_sq = error * error;
+  float error_sq = sq_error(predicted_period_[0], last_period);
   SLOPE(prediction_error_[0], error_sq, 0.7f, 0.2f);
-  // Skipping the lpf let's it recover more quickly after a miss, but does
-  // make it more sensitive to noise. So just trying it.
-  ONE_POLE(predicted_period_[0], last_period, 0.5f);
-  // predicted_period_[0] = last_period;
+  // Skipping the lpf let's it adapt immediately in simple cases, but also can
+  // result in it clinging on to spurious patterns when periods are changing a
+  // lot (since the last pulse will can have larger error). I think better
+  // behavior in the simple case is worth it though.
+  // ONE_POLE(predicted_period_[0], last_period, 0.5f);
+  predicted_period_[0] = last_period;
 
   for (int i = 1; i <= kMaxPatternPeriod; ++i) {
-    float error = predicted_period_[i] - last_period;
-    float error_sq = error * error;
+    float error_sq = sq_error(predicted_period_[i], last_period);
     SLOPE(prediction_error_[i], error_sq, 0.7f, 0.2f);
 
     size_t t = current_pulse_ + 1 + kHistorySize - i;

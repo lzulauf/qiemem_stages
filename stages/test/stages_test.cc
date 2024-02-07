@@ -406,7 +406,6 @@ void TestAudioOscillator() {
 */
 
 int main(void) {
-  /*
   TestADSR();
   TestTwoStepSequence();
   TestSingleDecay();
@@ -425,13 +424,14 @@ int main(void) {
   TestWhiteNoise();
   TestBrownNoise();
   TestDelay();
-  */
-  TestSmallQuantizer();
-  //TestTuringMachine();
+  // for (int i=100; i--;) TestTapLFO();
+  // for (int i=200; i--;) TestTapLFOAudioRate();
+  // TestSmallQuantizer();
+  // TestTuringMachine();
 
-  //TestQuantizeLinear();
-  //TestZero();
+  // TestQuantizeLinear();
+  // TestZero();
   // This segment type doesn't exist anymore
   //TestClockedSampleAndHold();
-  //TestAudioOscillator();
+  // TestAudioOscillator();
 }
