@@ -130,9 +130,12 @@ void Ui::Poll() {
           if (settings_->in_seg_gen_mode()) {
             bool change_range = false;
             bool change_scale = false;
+            bool has_audio_rate = false;
             switch (old_flags & 0x3) {
               case 0: // ramp
                 change_range = true;
+                has_audio_rate = chain_state_->loop_status(i) ==
+                                 ChainState::LOOP_STATUS_SELF;
                 break;
               case 3: // random
                 if (chain_state_->loop_status(i) == ChainState::LOOP_STATUS_SELF
@@ -154,6 +157,8 @@ void Ui::Poll() {
               seg_config[i] &= ~0x0300; // reset range bits
               if (slider < 0.25f) {
                 seg_config[i] |= 0x0100;
+              } else if (has_audio_rate && slider > 0.97f) {
+                seg_config[i] |= 0x0300;
               } else if (slider > 0.75f) {
                 seg_config[i] |= 0x0200;
               }
@@ -348,10 +353,11 @@ void Ui::UpdateLEDs() {
         FadePattern(4, 0x08),  // SELF
       };
 
-      uint8_t lfo_patterns[3] = {
+      uint8_t lfo_patterns[4] = {
         FadePattern(4, 0x08), // Default, middle
         FadePattern(6, 0x08), // slow
         FadePattern(2, 0x08), // fast
+        FadePattern(3, 0x08) // audio
       };
 
       for (size_t i = 0; i < kNumChannels; ++i) {
@@ -378,13 +384,22 @@ void Ui::UpdateLEDs() {
               }
             }
           }
+          if (speed == segment::RANGE_AUDIO) {
+            if ((ms >> 8) & 1) {
+               color = LED_COLOR_RED;
+               brightness >>= 2;
+            }
+          } else if (is_bipolar(configuration) && (((ms >> 8) & 0b11) == 0)) {
+            color = LED_COLOR_RED;
+            brightness = 0x1;
+          }
 
           if ((changing_slider_prop_ & (1 << i)) && (
               type == 1
               || type == 2
               || (type == 3 && !self_loop))) {
             uint8_t scale = 3 - ((configuration >> 12) & 0x3);
-            color = (ms >> 6) % 2 == 0
+            color = ((ms >> 6) & 0x1) == 0
               ? palette_[scale] : LED_COLOR_OFF;
           } else if (type == 3) {
             uint8_t proportion = (ms >> 7) & 15;
@@ -409,15 +424,6 @@ void Ui::UpdateLEDs() {
           }
         }
         uint32_t discrete_state_change_dur = ms - discrete_change_time_[i];
-
-        if (settings_->in_seg_gen_mode()
-            && is_bipolar(configuration)
-            // the bipolar red blink makes it hard to see discrete state change indicator
-            && discrete_state_change_dur > kDiscreteStateBrightDur
-            && ((ms >> 8) % 4 == 0)) {
-          color = LED_COLOR_RED;
-          brightness = 0x1;
-        }
 
         if (discrete_state_change_dur <= kDiscreteStateBrightDur) {
           brightness = 0xf * (kDiscreteStateBrightDur - discrete_state_change_dur) / kDiscreteStateBrightDur

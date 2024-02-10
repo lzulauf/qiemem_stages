@@ -87,7 +87,6 @@ void CvReader::Read(IOBuffer::Block* block) {
     block->pot[i] = is_locked(i) ? locked_pot_[i] : lp_pot_[i];
     block->cv_slider[i] = combined_value;
     block->cv[i] = value;
-    //block->slider[i] = lp_slider_[i];
     block->slider[i] = slider;
   }
 

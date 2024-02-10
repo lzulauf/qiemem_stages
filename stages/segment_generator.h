@@ -73,6 +73,7 @@ enum FreqRange {
   RANGE_DEFAULT = 0,
   RANGE_SLOW = 1,
   RANGE_FAST = 2,
+  RANGE_AUDIO = 3,
 };
 
 struct Configuration {
@@ -190,6 +191,11 @@ class SegmentGenerator {
         || !segment_configuration.bipolar;
     segments_[0].quant_scale = segment_configuration.quant_scale;
     num_segments_ = 1;
+    ResetPllCounter();
+  }
+
+  inline void ResetPllCounter() {
+    pll_counter_ = static_cast<int>(kSampleRate * 0.25f);
   }
 
   inline void ConfigureSlave(int i) {
@@ -257,8 +263,8 @@ class SegmentGenerator {
   DECLARE_PROCESS_FN(TrackAndHold);
   DECLARE_PROCESS_FN(TapLFO);
   DECLARE_PROCESS_FN(FreeRunningLFO);
-  DECLARE_PROCESS_FN(PLLOscillator);
-  DECLARE_PROCESS_FN(FreeRunningOscillator);
+  // DECLARE_PROCESS_FN(PLLOscillator);
+  // DECLARE_PROCESS_FN(FreeRunningOscillator);
   DECLARE_PROCESS_FN(Delay);
   DECLARE_PROCESS_FN(AttOff);
   DECLARE_PROCESS_FN(AttSampleAndHold);
@@ -275,13 +281,15 @@ class SegmentGenerator {
 
   void ProcessRandomFromPhase(float smoothness, Output* in_out, size_t size);
 
-  void ProcessOscillator(bool audio_rate, const stmlib::GateFlags* gate_flags,
+  void ProcessOscillator(const stmlib::GateFlags* gate_flags,
       Output* out,size_t size);
 
   static void ShapeLFO(float shape, const float *phase, Output *out,
                        size_t size, bool bipolar);
-  static void ShapeSplineLFO(float shape, const float *phase, Output *out,
-                             size_t size, bool bipolar);
+  template <bool bandlimit>
+  static void
+  ShapeSplineLFO(float shape, float frequencey, const float *input_phase,
+                 SegmentGenerator::Output *out, size_t size, bool bipolar);
   float WarpPhase(float t, float curve) const;
   float RateToFrequency(float rate) const;
   float PortamentoRateToLPCoefficient(float rate) const;
@@ -311,6 +319,7 @@ class SegmentGenerator {
 
   ProcessFn process_fn_;
 
+  int pll_counter_;
   tides::RampExtractor ramp_extractor_;
   stmlib::HysteresisQuantizer2 function_quantizer_;
 

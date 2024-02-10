@@ -517,27 +517,17 @@ const tides::Ratio divider_ratios[] = {
   calc_ratio(16, 1),
 };
 
-const uint8_t divider_ratios_start[] = {6, 0, 9};
-const uint8_t num_divider_ratios[] = {7, 10, 10};
+const uint8_t divider_ratios_start[] = {6, 0, 9, 6};
+const uint8_t num_divider_ratios[] = {7, 10, 10, 7};
 
 void SegmentGenerator::ProcessTapLFO(
     const GateFlags* gate_flags, SegmentGenerator::Output* out, size_t size) {
-  ProcessOscillator(false, gate_flags, out, size);
+  ProcessOscillator(gate_flags, out, size);
 }
 
 void SegmentGenerator::ProcessFreeRunningLFO(
     const GateFlags* gate_flags, SegmentGenerator::Output* out, size_t size) {
-  ProcessOscillator(false, NULL, out, size);
-}
-
-void SegmentGenerator::ProcessPLLOscillator(
-    const GateFlags* gate_flags, SegmentGenerator::Output* out, size_t size) {
-  ProcessOscillator(true, gate_flags, out, size);
-}
-
-void SegmentGenerator::ProcessFreeRunningOscillator(
-    const GateFlags* gate_flags, SegmentGenerator::Output* out, size_t size) {
-  ProcessOscillator(true, NULL, out, size);
+  ProcessOscillator(NULL, out, size);
 }
 
 inline float Log2Fast(float x) {
@@ -553,64 +543,76 @@ inline float Log2Fast(float x) {
   return log2f;
 }
 
+const float default_root_note = 2.0439497f;
+const float root_notes[] = {default_root_note, default_root_note / 16.0f,
+                            default_root_note * 64.0f,
+                            default_root_note * 128.0f};
+const float audio_rate_threshold = 16.0f * default_root_note / kSampleRate;
+
 void SegmentGenerator::ProcessOscillator(
-    bool audio_rate,
     const GateFlags* gate_flags,
     SegmentGenerator::Output* out,
     size_t size) {
 
   float frequency = 0.0f;
-  const float root_note = audio_rate ? 261.6255616f : 2.0439497f;
+  const float root_note = root_notes[segments_[0].range];
   float ramp[size];
+  // true: Use triangle -> saw -> square -> pwm pulse fully bandlimited osc
+  // false: Use saw -> triangle -> sine -> triangle -> square osc but still
+  // partially bandlimit if frequency is high enough.
+  FreqRange range = segments_[0].range;
+  bool audio_rate = range == segment::RANGE_AUDIO;
+  bool pll = audio_rate || pll_counter_ <= 0;
+
+  if (!audio_rate && multimode_ == MULTI_MODE_STAGES_SLOW_LFO) {
+    frequency /= 8.0f;
+  }
 
   tides::Ratio r = { 1.0f, 1 };
-  FreqRange range = segments_[0].range;
   if (gate_flags) {
     r = function_quantizer_.Lookup(
         divider_ratios + divider_ratios_start[range],
         parameters_[0].primary * 1.03f);
-    frequency = ramp_extractor_.Process(
-        audio_rate, false, r, gate_flags, ramp, size);
+    frequency =
+        ramp_extractor_.Process(pll, false, r, gate_flags, ramp, size);
+
+    // Once in PLL mode, we stay there until state change.
+    if (pll_counter_ > 0 && frequency > audio_rate_threshold)
+      pll_counter_-=size;
+    else if (pll_counter_ > 0)
+      ResetPllCounter();
+
   } else {
     float f = 96.0f * (parameters_[0].primary - 0.5f);
     CONSTRAIN(f, -128.0f, 127.0f);
     frequency = SemitonesToRatio(f) * root_note / kSampleRate;
-    switch (range) {
-      case segment::RANGE_SLOW:
-        frequency /= 16.0f;
-        break;
-      case segment::RANGE_FAST:
-        frequency *= 64.0f;
-        break;
-      default:
-        break;
-    }
   }
 
-  if (range == segment::RANGE_FAST && segments_[0].bipolar) {
+  if (audio_rate) {
     audio_osc_.Render(frequency, parameters_[0].secondary, ramp, size);
 
-    // Blinking rate follows the distance to the nearest C.
-    float distance_to_c = frequency <= 0.0f
-        ? 0.5f
-        : Log2Fast(frequency / r.ratio * kSampleRate / root_note);
+    // This is really cool, but induces a pretty big performance hit.
+    // // Blinking rate follows the distance to the nearest C.
+    // float distance_to_c = frequency <= 0.0f
+    //     ? 0.5f
+    //     : Log2Fast(frequency / r.ratio * kSampleRate / root_note);
 
-    // Wrap to [-0.5, 0.5]
-    MAKE_INTEGRAL_FRACTIONAL(distance_to_c);
-    if (distance_to_c_fractional < -0.5f) {
-      distance_to_c_fractional += 1.0f;
-    } else if (distance_to_c_fractional > 0.5f) {
-      distance_to_c_fractional -= 1.0f;
-    }
-    float d = std::min(2.0f * fabsf(distance_to_c_fractional), 1.0f);
+    // // Wrap to [-0.5, 0.5]
+    // MAKE_INTEGRAL_FRACTIONAL(distance_to_c);
+    // if (distance_to_c_fractional < -0.5f) {
+    //   distance_to_c_fractional += 1.0f;
+    // } else if (distance_to_c_fractional > 0.5f) {
+    //   distance_to_c_fractional -= 1.0f;
+    // }
+    // float d = std::min(2.0f * fabsf(distance_to_c_fractional), 1.0f);
 
-    // Blink f between 0.125 Hz and 16 Hz depending on distance to C.
-    const float blink_frequency = float(size) * \
-        (16.0f * d * (2.0f - d) + 0.125f) / kSampleRate;
-    phase_ += blink_frequency;
-    if (phase_ >= 1.0f) {
-      phase_ -= 1.0f;
-    }
+    // // Blink f between 0.125 Hz and 16 Hz depending on distance to C.
+    // const float blink_frequency =
+    //     float(size) * (16.0f * d * (2.0f - d) + 0.125f) / kSampleRate;
+    // phase_ += blink_frequency;
+    // if (phase_ >= 1.0f) {
+    //   phase_ -= 1.0f;
+    // }
     for (size_t i = 0; i < size; ++i) {
       out[i].phase = ramp[i] * 2.0f - 1.0f;
       out[i].value = ramp[i] * 5.0f / 8.0f;
@@ -626,8 +628,12 @@ void SegmentGenerator::ProcessOscillator(
         ramp[i] = phase_;
       }
     }
-    ShapeSplineLFO(parameters_[0].secondary, ramp, out, size, segments_[0].bipolar);
-    // ShapeLFO(parameters_[0].secondary, ramp, out, size, segments_[0].bipolar);
+    if (frequency > audio_rate_threshold)
+      ShapeSplineLFO<true>(parameters_[0].secondary, frequency, ramp, out, size,
+                           segments_[0].bipolar);
+    else
+      ShapeSplineLFO<false>(parameters_[0].secondary, frequency, ramp, out, size,
+                           segments_[0].bipolar);
   }
   active_segment_ = out[size - 1].segment;
 }
@@ -747,21 +753,10 @@ void SegmentGenerator::ProcessFreeRunningRandomLFO(
   float f = 96.0f * (parameters_[0].primary - 0.5f);
   CONSTRAIN(f, -128.0f, 127.0f);
 
-  float frequency = SemitonesToRatio(f) * 2.0439497f / kSampleRate;
+  const float root_note = root_notes[segments_[0].range];
+  float frequency = SemitonesToRatio(f) * root_note / kSampleRate;
 
   active_segment_ = 0;
-  switch (segments_[active_segment_].range) {
-    case segment::RANGE_SLOW:
-      frequency /= 16.0f;
-      break;
-    case segment::RANGE_FAST:
-      // From ~32hz to ~8khz, which is high enough to to go full noise
-      frequency *= 64.0f * 4.0f;
-      break;
-    default:
-      // It's good where it is
-      break;
-  }
 
   if (multimode_ == MULTI_MODE_STAGES_SLOW_LFO) {
     frequency /= 8.0f;
@@ -1108,111 +1103,194 @@ void SegmentGenerator::ProcessSlave(
   }
 }
 
-float spline_lfo(const float attack, const float attack_phase_mult,
-                 const float pw1, const float release,
-                 const float release_phase_mult, const float sharpness,
-                 float t) {
-  if (t <= attack + pw1) {
+/**
+ * Polynomial approximation of the residular between a perfect step and a
+ * bandlimited step. This allows you to approximately bandlimit a wave with a
+ * value discontinuity. This works by approximating a bandlimited impulse (blit)
+ * as a simple upside down triangle (t from -dt to dt, achieving peak of 1 at
+ * t=0). That is then integrated to get an approximate bandlimited step (blep),
+ * and then the difference between the blep and a perfect step is what we find
+ * in this function. This can then be added to a naive step to bandlimit it.
+ * This does effectively the same thing as ThisBlepSample(float) and
+ * NextBlepSample(float), but is written such that we don't have to accumulate
+ * anything across time, which makes it work well with the original LFO
+ * functions (and I find a bit simpler to think about).
+ * This page does a nice job of walking through the math:
+ * https://www.metafunction.co.uk/post/all-about-digital-oscillators-part-2-blits-bleps
+ * Not actually using this, but keeping it around in case I forget how polyblep
+ * works.
+*/
+float polyblep(float t, float dt) {
+  if (t < dt) {
+    t = t / dt - 1.0f;
+    return -t * t;
+  } else if (t > 1.0f - dt) {
+    t = (t - 1.0f) / dt + 1.0f;
+    return t * t;
+  }
+  return 0.0f;
+}
+
+/**
+ * Polynomial approximation of the residual with a bandlimited ramp. This allows
+ * you to approximiately bandlimit a wave with a discontinuity in the first
+ * derivative (e.g. a triangle). A bandlimited change in derivative is just an
+ * integrated blep (see above). Thus, this is just the integral of polyblep.
+ * It should be scaled by the change in slope times dt. Unfortunately, I cannot
+ * now find the article that helped this click for me, but it does seem to work.
+ * Similar to ThisIntegratedBlepSample(float) and
+ * NextIntegratedBlepSample(float), but I don't understand why those are fourth
+ * order while the blep sample ones are second order.
+ * Not actually using this, but keeping it around in case I forget how polyblamp
+ * works.
+*/
+float polyblamp(float t, float dt) {
+  if (t < dt) {
+    t = t / dt - 1.0f;
+    return (-1.0f / 3.0f) * t * t * t;
+  } else if (t > 1.0f - dt) {
+    t = (t - 1.0f) / dt + 1.0f;
+    return (1.0f / 3.0f) * t * t * t;
+  }
+  return 0.0f;
+}
+
+float spline_lfo(const float attack, const float attack_slope, const float pw,
+                 const float release, const float release_slope,
+                 const float up_slope, const float down_slope, float t) {
+  if (t <= attack + pw) {
     if (t > attack) return 1.0f;
-    return spline(-1.0f, sharpness, 1.0f, sharpness, t * attack_phase_mult);
+    return spline(-1.0f, up_slope, 1.0f, up_slope, t * attack_slope);
   } else {
-    t -= attack + pw1;
+    t -= attack + pw;
     if (t >= release) return -1.0f;
-    return spline(1.0f, -sharpness, -1.0f, -sharpness, t * release_phase_mult);
+    return spline(1.0f, down_slope, -1.0f, down_slope, t * release_slope);
   }
 }
 
-/* static */
-void SegmentGenerator::ShapeSplineLFO(float shape, const float* input_phase, SegmentGenerator::Output* out, size_t size, bool bipolar) {
-  const float ramp_boundary = 0.333f;
-  const float trap_boundary = 0.667f;
-  // The following settings reproduce the response curve of the original LFO
-  // shape control, but seem to have a measurable performance impact in my
-  // testing. The above settings felt okay in practice, so sticking with them
-  // for performance and simplicity.
-  // shape -= 0.5f;
-  // shape = (2.0f + 9.999999f * shape / (1.0f + 3.0f * fabs(shape))) / 4.0f;
-  // const float ramp_boundary = 0.25f;
-  // const float trap_boundary = 0.75f;
-  float attack, pw1, release, sharpness;
-  if (shape <= ramp_boundary) {
-    attack = shape / (2.0f * ramp_boundary);
-    pw1 = 0.0f;
-    release = 1.0f - attack;
-    sharpness = 2.0f;
-  } else if (shape <= trap_boundary) {
-    attack = 0.5f;
-    pw1 = 0.0f;
-    release = 0.5f;
-    sharpness = 2.0f * fabs(shape - 0.5f) / (0.5f - ramp_boundary);
-  } else {
-    const float pw = (shape - trap_boundary) / (1.0f - trap_boundary);
-    attack = (1.0f - pw) * 0.5f;
-    pw1 = pw * 0.5f;
-    release = attack;
-    sharpness = 2.0f;
-  }
-  const float attack_phase_mult = attack == 0.0f ? 1.0f : 1.0f / attack;
-  const float release_phase_mult = release == 0.0f ? 1.0f : 1.0f / release;
-
-  const float amplitude = bipolar ? 10.0f / 16.0f : 0.5f;
-  const float offset = bipolar ? 0.0f : 0.5f;
-  while (size--) {
-    const float phase = *input_phase;
-    out->phase = phase;
-    out->value = amplitude * spline_lfo(attack, attack_phase_mult, pw1, release,
-                                        release_phase_mult, sharpness, phase) +
-                 offset;
-    out->segment = phase < 0.5f ? 0 : 1;
-    ++out;
-    ++input_phase;
-  }
-}
-
-void SegmentGenerator::ShapeLFO(
-    float shape,
-    const float* input_phase,
-    SegmentGenerator::Output* out,
-    size_t size,
-    bool bipolar) {
-  shape -= 0.5f;
-  shape = 2.0f + 9.999999f * shape / (1.0f + 3.0f * fabs(shape));
-
-  const float slope = min(shape * 0.5f, 0.5f);
-  const float plateau_width = max(shape - 3.0f, 0.0f);
-  const float sine_amount = max(
-      shape < 2.0f ? shape - 1.0f : 3.0f - shape, 0.0f);
-
-  const float slope_up = 1.0f / slope;
-  const float slope_down = 1.0f / (1.0f - slope);
-  const float plateau = 0.5f * (1.0f - plateau_width);
-  const float normalization = 1.0f / plateau;
-  const float phase_shift = plateau_width * 0.25f;
-
-  const float amplitude = bipolar ? (10.0f / 16.0f) : 0.5f;
-  const float offset = bipolar ? 0.0f : 0.5f;
-  while (size--) {
-    float phase = *input_phase + phase_shift;
-    if (phase > 1.0f) {
-      phase -= 1.0f;
+  template <bool bandlimit>
+  void SegmentGenerator::ShapeSplineLFO(
+      float shape, float frequency, const float *input_phase,
+      SegmentGenerator::Output *out, size_t size, bool bipolar) {
+    const float ramp_boundary = 0.333f;
+    const float trap_boundary = 0.667f;
+    // The following settings reproduce the response curve of the original LFO
+    // shape control, but seem to have a measurable performance impact in my
+    // testing. The above settings felt okay in practice, so sticking with them
+    // for performance and simplicity.
+    // shape -= 0.5f;
+    // shape = (2.0f + 9.999999f * shape / (1.0f + 3.0f * fabs(shape))) / 4.0f;
+    // const float ramp_boundary = 0.25f;
+    // const float trap_boundary = 0.75f;
+    float attack, pw1, release, up_slope, down_slope;
+    if (shape <= ramp_boundary) {
+      attack = shape / (2.0f * ramp_boundary);
+      pw1 = 0.0f;
+      release = 1.0f - attack;
+      up_slope = 2.0f;
+    } else if (shape <= trap_boundary) {
+      attack = 0.5f;
+      pw1 = 0.0f;
+      release = 0.5f;
+      up_slope = 2.0f * fabs(shape - 0.5f) / (0.5f - ramp_boundary);
+    } else {
+      const float pw = (shape - trap_boundary) / (1.0f - trap_boundary);
+      attack = (1.0f - pw) * 0.5f;
+      pw1 = pw * 0.5f;
+      release = attack;
+      up_slope = 2.0f;
     }
-    float triangle = phase < slope
-        ? slope_up * phase
-        : 1.0f - (phase - slope) * slope_down;
-    triangle -= 0.5f;
-    CONSTRAIN(triangle, -plateau, plateau);
-    triangle = triangle * normalization;
-    // Using Interpolate instead of InterpolateWrap gives about about about a
-    // 20ms speedup in benchmarks and allows an extra synced segment  float
-    // sine = InterpolateWrap(lut_sine, phase + 0.75f, 1024.0f);
-    float sine = Interpolate(lut_sine, phase < 0.25f ? phase + 0.75f : phase - 0.25f, 1024.0f);
-    out->phase = *input_phase;
-    out->value = amplitude * Crossfade(triangle, sine, sine_amount) + offset;
-    out->segment = phase < 0.5f ? 0 : 1;
-    ++out;
-    ++input_phase;
+    down_slope = -up_slope;
+    if (bandlimit) {
+      // This is not a traditional polyblep implementation. Instead, it uses the
+      // spline function to create a 3rd order polynominal approximation of a
+      // step that 2*dt wide... which is, if I understand, basically what
+      // polyblep is trying to do (though polyblep often uses a 2nd order
+      // approximation), but does so by applying a correction to a naive step
+      // instead. AFAICT they sound pretty much the same.
+      // The big advantage of this approach is that it allows a smooth
+      // transition from trapezoid to square without losing performance since
+      // this just takes advantage of what we were already doing. Special
+      // purpose square wave and special purpose trapezoid implementations can
+      // be faster, but smooth application of polyblep as you transition
+      // destroys that, is a pain, and sounds worse.
+      // Note that this code does *not* attempt to bandlimit discontinuities in
+      // first derivative (ie what blamp methods do), but it could be extended
+      // to do so be adding a 2*dt width splined transition from one slope to
+      // the other. This would incur a performance hit though and, honestly,
+      // when I tried adding polyblamp to other implementations of this, it only
+      // sounded marginally better to me.
+      const float dp2 = 2.0f * frequency;
+      if (attack < dp2) {
+        up_slope *= attack / dp2;
+        if (pw1 > dp2 - attack) pw1 -= dp2 - attack;
+        else release -= dp2 - attack;
+        attack = dp2;
+      }
+      if (release < dp2) {
+        down_slope *= release / dp2;
+        release = dp2;
+      }
+    }
+    const float attack_slope = attack == 0.0f ? 0.0f : 1.0f / attack;
+    const float release_slope = release == 0.0f ? 0.0f : 1.0f / release;
+
+    const float amplitude = bipolar ? 10.0f / 16.0f : 0.5f;
+    const float offset = bipolar ? 0.0f : 0.5f;
+    while (size--) {
+      const float phase = *input_phase;
+      out->phase = phase;
+      out->value =
+          amplitude * spline_lfo(attack, attack_slope, pw1, release,
+                                 release_slope, up_slope, down_slope, phase) +
+          offset;
+      out->segment = phase < 0.5f ? 0 : 1;
+      ++out;
+      ++input_phase;
+    }
   }
-}
+
+  void SegmentGenerator::ShapeLFO(float shape, const float *input_phase,
+                                  SegmentGenerator::Output *out, size_t size,
+                                  bool bipolar) {
+    shape -= 0.5f;
+    shape = 2.0f + 9.999999f * shape / (1.0f + 3.0f * fabs(shape));
+
+    const float slope = min(shape * 0.5f, 0.5f);
+    const float plateau_width = max(shape - 3.0f, 0.0f);
+    const float sine_amount =
+        max(shape < 2.0f ? shape - 1.0f : 3.0f - shape, 0.0f);
+
+    const float slope_up = 1.0f / slope;
+    const float slope_down = 1.0f / (1.0f - slope);
+    const float plateau = 0.5f * (1.0f - plateau_width);
+    const float normalization = 1.0f / plateau;
+    const float phase_shift = plateau_width * 0.25f;
+
+    const float amplitude = bipolar ? (10.0f / 16.0f) : 0.5f;
+    const float offset = bipolar ? 0.0f : 0.5f;
+    while (size--) {
+      float phase = *input_phase + phase_shift;
+      if (phase > 1.0f) {
+        phase -= 1.0f;
+      }
+      float triangle = phase < slope ? slope_up * phase
+                                     : 1.0f - (phase - slope) * slope_down;
+      triangle -= 0.5f;
+      CONSTRAIN(triangle, -plateau, plateau);
+      triangle = triangle * normalization;
+      // Using Interpolate instead of InterpolateWrap gives about about about a
+      // 20ms speedup in benchmarks and allows an extra synced segment  float
+      // sine = InterpolateWrap(lut_sine, phase + 0.75f, 1024.0f);
+      float sine = Interpolate(
+          lut_sine, phase < 0.25f ? phase + 0.75f : phase - 0.25f, 1024.0f);
+      out->phase = *input_phase;
+      out->value = amplitude * Crossfade(triangle, sine, sine_amount) + offset;
+      out->segment = phase < 0.5f ? 0 : 1;
+      ++out;
+      ++input_phase;
+    }
+  }
 
 inline bool is_step(Configuration config) {
   // Looping Turing types are holds

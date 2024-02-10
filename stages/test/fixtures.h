@@ -131,14 +131,19 @@ class SegmentGeneratorTest {
   }
 
   void Render(const char* file_name, int sr) {
+    Render(file_name, sr, 20, true, true, true, true);
+  }
+
+  void Render(const char *file_name, int sr, int duration, bool gate,
+              bool value, bool segment, bool phase) {
     if (pulse_generator_.empty()) {
       pulse_generator_.CreateTestPattern();
     }
 
-    stmlib::WavWriter wav_writer(4, sr, 20);
+    stmlib::WavWriter wav_writer(gate + value + segment + phase, sr, duration);
     wav_writer.Open(file_name);
 
-    for (int i = 0; i < sr * 20; ++i) {
+    for (int i = 0; i < sr * duration; ++i) {
       GateFlags f;
       pulse_generator_.Render(&f, 1);
       SegmentGenerator::Output out;
@@ -152,12 +157,13 @@ class SegmentGeneratorTest {
       }
 
       segment_generator_.Process(&f, &out, 1);
+      int channel = 0;
       float s[4];
-      s[0] = f & GATE_FLAG_HIGH ? 0.8f : 0.0f;
-      s[1] = out.value;
-      s[2] = out.segment * 0.1f;
-      s[3] = out.phase;
-      wav_writer.Write(s, 4, 32767.0f);
+      if (gate) s[channel++] = f & GATE_FLAG_HIGH ? 0.8f : 0.0f;
+      if (value) s[channel++] = out.value;
+      if (segment) s[channel++] = out.segment * 0.1f;
+      if (phase) s[channel++] = out.phase;
+      wav_writer.Write(s, channel, 32767.0f);
     }
   }
 

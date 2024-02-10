@@ -43,6 +43,18 @@ size_t pick_iters(T code) {
   return iterations;
 }
 
+void printf_dur(double ns) {
+  if (ns < 1e3) {
+    printf("%0.3fns", ns);
+  } else if (ns < 1e6) {
+    printf("%0.3fus", ns / 1e3);
+  } else if (ns < 1e9) {
+    printf("%0.3fms", ns / 1e6);
+  } else {
+    printf("%0.3fs", ns / 1e9);
+  }
+}
+
 template <typename T>
 void timeit(T code, size_t runs) {
   double min = INT64_MAX;
@@ -50,6 +62,9 @@ void timeit(T code, size_t runs) {
   size_t iterations = pick_iters(code);
   for (size_t i = 0; i < runs; i++) {
     time_t t = time(code, iterations);
+    printf_dur(t / iterations);
+    printf(" ");
+    fflush(stdout);
     mean += t;
     if (t < min) {
       min = t;
@@ -58,19 +73,11 @@ void timeit(T code, size_t runs) {
   min /= iterations;
   mean = mean / iterations / runs;
 
-  if (min < 1e3) {
-    printf("%ld runs of %ld iterations; mean %0.3fns, min %0.3fns\n", runs,
-           iterations, mean, min);
-  } else if (min < 1e6) {
-    printf("%ld runs of %ld iterations; mean %0.3fus, min %0.3fus\n", runs,
-           iterations, mean / 1e3, min / 1e3);
-  } else if (min < 1e9) {
-    printf("%ld runs of %ld iterations; mean %0.3fms, min %0.3fms\n", runs,
-           iterations, mean / 1e6, min / 1e6);
-  } else {
-    printf("%ld runs of %ld iterations; mean %0.3fs, min %0.3fs\n", runs,
-           iterations, mean / 1e9, min / 1e9);
-  }
+  printf("\n%ld runs of %ld iterations; mean ", runs, iterations);
+  printf_dur(mean);
+  printf(", min ");
+  printf_dur(min);
+  printf("\n\n");
 }
 
 void TimeFreeLFO() {
@@ -82,6 +89,78 @@ void TimeFreeLFO() {
                                                 segment::RANGE_DEFAULT};
         t.generator()->Configure(false, &configuration, 1);
 
+        t.set_segment_parameters(0, 0.75f, 1.0f);
+        const size_t size = 8;
+        size_t duration = (1500 * 6 + 3000 * 2) * 1000 / size;
+        while (duration--) {
+          SegmentGenerator::Output out[size];
+
+          t.generator()->Process(0, out, size);
+        }
+        return 0;
+      },
+      7);
+}
+
+void TimeFreeFastLFO() {
+  cout << "Free Fast LFO" << endl;
+  timeit(
+      [] {
+        SegmentGeneratorTest t;
+        segment::Configuration configuration = {segment::TYPE_RAMP, true, false,
+                                                segment::RANGE_FAST};
+        t.generator()->Configure(false, &configuration, 1);
+
+        t.set_segment_parameters(0, 0.75f, 1.0f);
+        const size_t size = 8;
+        size_t duration = (1500 * 6 + 3000 * 2) * 1000 / size;
+        while (duration--) {
+          SegmentGenerator::Output out[size];
+
+          t.generator()->Process(0, out, size);
+        }
+        return 0;
+      },
+      7);
+}
+
+
+void TimeTapLFO() {
+  cout << "Tap LFO" << endl;
+  timeit(
+      [] {
+        SegmentGeneratorTest t;
+        segment::Configuration configuration = {segment::TYPE_RAMP, true, false,
+                                                segment::RANGE_DEFAULT};
+        t.generator()->Configure(true, &configuration, 1);
+        for (int i = 0; i < 1000; ++i) {
+          t.pulses()->AddPulses(1500, 500, 6);
+          t.pulses()->AddPulses(3000, 500, 2);
+          // t.pulses()->AddPulses(50, 15, 400);
+        }
+
+        t.set_segment_parameters(0, 0.5f, 0.5f);
+        const size_t size = 8;
+        while (!t.pulses()->empty()) {
+          GateFlags flags[size];
+          t.pulses()->Render(flags, 8);
+          SegmentGenerator::Output out[size];
+
+          t.generator()->Process(flags, out, size);
+        }
+        return 0;
+      },
+      7);
+}
+
+void TimeOscillator() {
+  cout << "Oscillator" << endl;
+  timeit(
+      [] {
+        SegmentGeneratorTest t;
+        segment::Configuration configuration = {segment::TYPE_RAMP, true, true,
+                                                segment::RANGE_AUDIO};
+        t.generator()->Configure(false, &configuration, 1);
         t.set_segment_parameters(0, 0.5f, 0.5f);
         const size_t size = 8;
         size_t duration = (1500 * 6 + 3000 * 2) * 1000 / size;
@@ -94,24 +173,23 @@ void TimeFreeLFO() {
       },
       7);
 }
-void TimeTapLFO() {
-  cout << "Tap LFO" << endl;
+
+void TimePllOscillator() {
+  cout << "PLL Oscillator" << endl;
   timeit(
       [] {
         SegmentGeneratorTest t;
-        segment::Configuration configuration = {segment::TYPE_RAMP, true, false,
-                                                segment::RANGE_DEFAULT};
+        segment::Configuration configuration = {segment::TYPE_RAMP, true, true,
+                                                segment::RANGE_AUDIO};
         t.generator()->Configure(true, &configuration, 1);
-        for (int i = 0; i < 1000; ++i) {
-          t.pulses()->AddPulses(1500, 500, 6);
-          t.pulses()->AddPulses(3000, 500, 2);
-        }
+        const size_t size = 8;
+        size_t duration = (1500 * 6 + 3000 * 2) * 1000 / size;
+        t.pulses()->AddPulses(50, 15, 10);
 
         t.set_segment_parameters(0, 0.5f, 0.5f);
-        const size_t size = 8;
         while (!t.pulses()->empty()) {
           GateFlags flags[size];
-          t.pulses()->Render(flags, 8);
+          t.pulses()->Render(flags, size);
           SegmentGenerator::Output out[size];
 
           t.generator()->Process(flags, out, size);
@@ -228,7 +306,10 @@ void TimeQuantizer() {
 
 int main() {
   TimeFreeLFO();
-  TimeTapLFO();
+  TimeFreeFastLFO();
+  TimeOscillator();
+  // TimePllOscillator();
+  // TimeTapLFO();
   // TimeRandomBrownianTapLFO();
   // TimeRandomSineTapLFO();
   // TimeRandomSplineTapLFO();
