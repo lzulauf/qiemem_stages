@@ -309,6 +309,23 @@ void SegmentGenerator::ProcessRiseAndFall(
   float fall = PortamentoRateToLPCoefficient(local_parameters_[0].slider);
   float rise = PortamentoRateToLPCoefficient(parameters_[0].secondary);
   ParameterInterpolator primary(&primary_, local_parameters_[0].cv, size);
+  switch (segments_[0].range) {
+    // enum is frequency ranges, so flipped for time...
+    case RANGE_SLOW:
+      // This is as high as we can go without exceeding 1. Makes it about 3
+      // times shorter
+      fall *= 1.0f / lut_portamento_coefficient[0];
+      rise *= 1.0f / lut_portamento_coefficient[0];
+      break;
+    case RANGE_FAST:
+      // 16 times longer
+      fall *= 0.0625f;
+      rise *= 0.0625f;
+      break;
+    default:
+      // fine where it is
+      break;
+  }
 
   while (size--) {
     value_ = segments_[0].bipolar ? primary.Next() : fabsf(primary.Next());
