@@ -772,6 +772,10 @@ void SegmentGenerator::ProcessFreeRunningRandomLFO(
 
   const float root_note = root_notes[segments_[0].range];
   float frequency = SemitonesToRatio(f) * root_note / kSampleRate;
+  if (segments_[0].range == RANGE_FAST) {
+    // This is so we can more smoothly transition into full noise
+    frequency *= 4.0f;
+  }
 
   active_segment_ = 0;
 

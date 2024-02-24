@@ -224,10 +224,10 @@ When used as a single segment, random segments behave as follows:
 - Ungated, looping: Random LFO with variable shape and frequency
     - Slider/CV: Frequency in V/oct. Frequency range is ~8 secs to ~32hz.
     - Pot: Smoothness: At full CCW, output will be stepped, uniformly random. This will increasingly smooth up until 12:00, using sine curve-like transitions between points. After 12:00, the output will transition to using a random walk to generate outputs instead. Increasing the pot further will decrease the variance of each step, resulting in small wiggles at full CW.
-    - Button + slider: Frequency range. Same as LFOs:
+    - Button + slider: Frequency range:
         - Slow: 2 min to 2hz
         - Medium: 8 secs to 32hz at the middle
-        - Fast: 8hz to ~2khz; at the very top of the slider, the segment will switch to true audio-rate noise, with the pot controlling the color of the noise.
+        - Fast: 32hz to ~8khz; when the segment exceeds about 8khz, it will switch to full noise with the pot controlling color.
     - Button + pot: Polarity. Unipolar ranges between 0v and 8v. Bipolar between -5v and 5v.
     - This video shows the range of behaviors: https://www.youtube.com/watch?v=SHhhvDU7lb4
 - Gated, looping: Clocked random LFO
