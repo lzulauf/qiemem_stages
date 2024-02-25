@@ -6,7 +6,7 @@ This is an unofficial firmware for Mutable Instruments Stages. It was originally
 This fork further adds the following to segment generator mode:
 
 - **Bipolar LFOs, steps, and holds**: Toggle a segment's polarity by holding its button and wiggling its pot
-- **Very-slow and audio-rate LFOs**: Change an LFO's frequency range by holding its button and moving its slider to the bottom for slow LFOs, to the middle for the default speed, near the top for audio-rate with the normal variable shape, and to the very top for the dedicated audio-rate oscillators added in the final v1.2 release of the [official firmware](https://pichenettes.github.io/mutable-instruments-documentation/modules/stages/firmware/)
+- **Very-slow and audio-rate LFOs**: Change an LFO's frequency range by holding its button and moving its slider to the bottom for slow LFOs, to the middle for the default speed, near the top for audio-rate with the normal variable shape LFOs, and to the very top for the dedicated audio-rate oscillators added in the final v1.2 release of the [official firmware](https://pichenettes.github.io/mutable-instruments-documentation/modules/stages/firmware/)
 - **Re-trigger control**: hold a ramp segment's button and wiggle its pot to toggle re-trigger behavior; this allows for DUSG/Maths-style clock dividers, subharmonic generators, and more!
 - **Fast and slow envelopes**: Change the range of a ramp's slider by holding its button and moving the slider to the top, middle, or bottom
 - **Arbitrarily slow-clocked LFOs and improved audio-rate clocked LFOs** [^made-official]
@@ -158,6 +158,7 @@ This fork adds the following features to this mode, none of which interfere with
 	- Medium: 1/4, 1/3, 1/2, 1, 2, 3, 4 (default; original Stages' behavior)
 	- Fast: 1, 2, 3, 4, 5, 6, 7, 8, 12, 16
     - Hold the segment's button and move its slider to change LFO range. LFO range is indicated by the speed of the mode indicator LED's cycle. Frequency has been capped at ~7khz.
+    - Holding the button and moving the slider to the very top will activate the audio-rate oscillator added to the official firmware in v1.2. These oscillators are fully bandlimited and have more diverse set of timbers.
 - **Time range control for ramp segments**:
     - Hold button and move slider to bottom (fast: 1 ms to 2.2 sec), middle (default: 1 ms to 16 sec), or top (slow: 16 sec to 13 min).
     - Note: Unlike with LFOs, CV range is unchanged.
@@ -253,12 +254,14 @@ In advanced mode, they act as slew segments with independent rise and fall contr
 Slider controls fall time (just like in single, gated, non-looping ramp segments) and pot controls rise time.
 CV input gives the target value.
 They have the same natural RC curve of slewed yellow segments (concave rise and convex fall), making them natural for use as audio envelopes when paired with a linear VCA.
-These segments have a many uses beyond standard slew:
+These segments have many uses beyond standard slew:
 
 - ASR envelopes: Patch your gate into the *CV* input (not gate). When the gate is high, the segment will rise and hold until the gate is release, at which point the segment will fall. This can be a nice alternative to decay segments (single, gated, non-looping green) when you want to avoid a clicky attack, or can be used as a general purpose ASR.
 - Envelope follower: Patch an audio signal into CV. Set rise short and fall longer. The segment will follow the amplitude of the audio signal. Adjust fall time to taste. Flip rise and fall to create an inverted envelope follower.
 
-Pot+slider changes polarity. In unipolar mode (default), a full-wave rectifier is applied to the incoming signal, improving behavior as an envelope follower. In bipolar mode, no rectifier is applied.
+Button+pot changes polarity. In unipolar mode (default), a full-wave rectifier is applied to the incoming signal, improving behavior as an envelope follower. In bipolar mode, no rectifier is applied.
+
+Button+slider changes the time range of the slider, similar to that of a gate ramp segment, with long time range at the top, default time range in the middle, and short time range at the bottom.
 
 ##### Single, looping step (yellow) segments attenuate
 
@@ -273,14 +276,15 @@ Gated segments will still sample and hold, but with attenuation instead slew.
 
 These segments can be very handy to control the range of LFOs and random segments.
 Turning on quantization with these segments can also be quite handy.
-Feeding in an LFO gives you arpeggios with controllable range.
-Feeding in a TM segment gives a generative melodies.
+Feeding in an LFO gives you arpeggios with a controllable range.
+Feeding in a TM segment gives a generative melody.
 
 ##### Single, gated, looping hold (red) segments have probability control
 
 The pot on single, gated, looping hold segments now controls their probability of firing.
 Previously, the pot did not do anything.
 Fully CW will cause it to always fire (the original behavior) and fully CCW will cause it to never fire.
+Note that this feature was added into the official firmware in v1.2.
 
 ### Slower free-running LFOs
 
@@ -360,7 +364,12 @@ Note that, as in the original Stages' harmonic oscillator mode, it is possible t
 This can be really handy for creating LFOs with interesting phasing, but may be confusing at first if you're expecting the LFOs to stay exactly in sync.
 The frequencies will "snap" to defined harmonics, so it shouldn't be too hard to get things to stay in time.
 
-The harmonics, from high to low are 8x, 6x, 5x, 4x, 3x, 2x, 1.5x, 1/2x, 1/4x.
+You can adjust the harmonic range of each segment by the segment's button and moving its slider to the top, middle, or bottom.
+The harmonic ranges are:
+
+- Top: 1x, 2x, 3x, ..., 16x
+- Middle (default): 1/4x, 1/2x, 1x, 1.5x, 2x, 3x, 4x, 5x, 6x, 8x
+- Bottomw: 1/16x, 1/15x, 1/14x, ..., 1x
 
 ### Harmonic oscillator with alternate controls
 

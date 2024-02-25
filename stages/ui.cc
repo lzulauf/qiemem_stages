@@ -157,7 +157,7 @@ void Ui::Poll() {
               seg_config[i] &= ~0x0300; // reset range bits
               if (slider < 0.25f) {
                 seg_config[i] |= 0x0100;
-              } else if (has_audio_rate && slider > 0.97f) {
+              } else if (has_audio_rate && slider > 0.999f) {
                 seg_config[i] |= 0x0300;
               } else if (slider > 0.75f) {
                 seg_config[i] |= 0x0200;
