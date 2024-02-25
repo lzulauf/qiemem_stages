@@ -581,9 +581,6 @@ void SegmentGenerator::ProcessOscillator(
   bool audio_rate = range == segment::RANGE_AUDIO;
   bool pll = audio_rate || pll_counter_ <= 0;
 
-  if (!audio_rate && multimode_ == MULTI_MODE_STAGES_SLOW_LFO) {
-    frequency /= 8.0f;
-  }
 
   tides::Ratio r = { 1.0f, 1 };
   if (gate_flags) {
@@ -603,6 +600,9 @@ void SegmentGenerator::ProcessOscillator(
     float f = 96.0f * (parameters_[0].primary - 0.5f);
     CONSTRAIN(f, -128.0f, 127.0f);
     frequency = SemitonesToRatio(f) * root_note / kSampleRate;
+    if (!audio_rate && multimode_ == MULTI_MODE_STAGES_SLOW_LFO) {
+      frequency /= 8.0f;
+    }
   }
 
   if (audio_rate) {

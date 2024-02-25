@@ -131,7 +131,7 @@ Hold one of the six buttons for 5 seconds to change mode. This setting is persis
 5. [Harmonic oscillator](#harmonic-oscillator), aka Ouroboros mode
 6. Harmonic oscillator with [alternate controls](#harmonic-oscillator-with-alternate-controls)
 
-For chained modules: adjacent, connected Stages will chain if both are in mode 1 (segment generator) or both are in mode 2 (adv. segment generator) or 3 (slow LFO).
+For chained modules: adjacent, connected Stages will chain if both are in mode 1 or 3 (segment generator and slow LFO) or both are in mode 2 (adv. segment generator).
 Modes 4, 5, and 6 will split a chain.
 So if you have connected modules in 1-1-2-3-6-2, 1-1 will be a chain, 2-3 will be a chain, and the last 2 will be isolated, like so: (1-1)-(2-3)-(6)-(2).
 Changing a module's mode will automatically update the chain configuration (the LEDs will flash like on startup).

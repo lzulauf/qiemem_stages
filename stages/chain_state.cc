@@ -90,13 +90,13 @@ void ChainState::Reinit(const Settings& settings) {
   num_internal_bindings_ = 0;
   num_bindings_ = 0;
 
-  if (settings.state().multimode == MULTI_MODE_STAGES) {
-    leftKey = kSimpleLeftKey;
-    rightKey = kSimpleRightKey;
-  } else if (settings.in_seg_gen_mode()) {
-    // Advanced and slow LFO are the same
+  if (settings.state().multimode == MULTI_MODE_STAGES_ADVANCED) {
     leftKey = kAdvancedLeftKey;
     rightKey = kAdvancedRightKey;
+  } else if (settings.in_seg_gen_mode()) {
+    // Standard and slow LFO are the same
+    leftKey = kSimpleLeftKey;
+    rightKey = kSimpleRightKey;
   } else {
     // Other modes don't use chaining, so just skip it
    status_ = CHAIN_READY;
