@@ -67,14 +67,17 @@ Reference tables
 - Button + pot: Hold button and wiggle pot to toggle
 
 Control overview (modes in order of corresponding button; hold button for 5 seconds to switch):
-| Mode             | Button   | Hold button 1s | Slider + CV                            | Pot                                               | Button + slider                                    | Button + pot                                        |
-| ---------------- | -------- | -------------- | -------------------------------------- | ------------------------------------------------- | -------------------------------------------------- | --------------------------------------------------- |
-| Segment gen      | Seg type | Toggle 🗘     | <pre>Time:  🟢<br>Level: 🟡🔴</pre> | <pre>Shape: 🟢🟡<br>Time:  🔴                  | <pre>Time range:  🟢<br>Quant scale: 🟡🔴</pre> | <pre>Polarity: 🗘🟢,🟡🔴<br>Re-trig:  🟢</pre> |
-| Adv segment gen  | Seg type | Toggle 🗘     | <pre>Time:  🟢<br>Level: 🟡🔴</pre> | <pre>Shape: 🟢🟡<br>Atten: 🗘🟡<br>Time:  🔴 | <pre>Time range:  🟢<br>Quant scale: 🟡🔴</pre> | <pre>Polarity: 🗘🟢,🟡🔴<br>Re-trig:  🟢</pre> |
-| Slow LFO         | Seg type | Toggle 🗘     | <pre>Time:  🟢<br>Level: 🟡🔴</pre> | <pre>Shape: 🟢🟡<br>Time:  🔴                  | <pre>Time range:  🟢<br>Quant scale: 🟡🔴</pre> | <pre>Polarity: 🗘🟢,🟡🔴<br>Re-trig:  🟢</pre> |
-| DAHDSR           | Gate     | -              | Time / level (5)                       | Shape (246)                                       | -                                                  | -                                                   |
-| Harmonic osc     | Shape    | Toggle shapes  | Freq (1) / amp                         | Tune (1) / harmony                                | Freq range (1)                                     | -                                                   |
-| Alt harmonic osc | Shape    | Toggle shapes  | Freq (1) / harmony                     | Tune (1) / amp                                    | Freq range (1)                                     | -                                                   |
+| Mode             | Button   | Hold button 1s | Slider + CV                                                    | Pot                                                                       | Button + slider                                                  | Button + pot                                            |
+| ---------------- | -------- | -------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------- |
+| Segment gen      | Seg type | Toggle 🗘     | <pre>Time:  🟢<br>Level: 🟡🔴</pre>                         | <pre>Shape: 🟢🟡<br>Time:  🔴                                          | <pre>Time range:  🟢<br>Quant scale: 🟡🔴</pre>               | <pre>Polarity: 🗘🟢,🟡🔴<br>Re-trig:  🟢</pre>     |
+| Adv segment gen  | Seg type | Toggle 🗘     | <pre>Time:  🟢☢️️<br>Level: 🟡🔴<br>Prob:  🕟☢️</pre> | <pre>Shape: 🟢🟡☢️️<br>Atten: 🗘🟡<br>Time:  🔴<br>Steps: 🕟☢️ | <pre>Time range:  🟢☢️️<br>Quant scale: 🟡🔴,🕟☢️</pre> | <pre>Polarity: 🗘🟢,🟡🔴☢️<br>Re-trig:  🟢</pre> |
+| Slow LFO         | Seg type | Toggle 🗘     | <pre>Time:  🟢<br>Level: 🟡🔴</pre>                         | <pre>Shape: 🟢🟡<br>Time:  🔴                                          | <pre>Time range:  🟢<br>Quant scale: 🟡🔴</pre>               | <pre>Polarity: 🗘🟢,🟡🔴<br>Re-trig:  🟢</pre>     |
+| DAHDSR           | Gate     | -              | Time / level (5)                                               | Shape (246)                                                               | -                                                                | -                                                       |
+| Harmonic osc     | Shape    | Toggle shapes  | Freq (1) / amp                                                 | Tune (1) / harmony                                                        | Freq range (1)                                                   | -                                                       |
+| Alt harmonic osc | Shape    | Toggle shapes  | Freq (1) / harmony                                             | Tune (1) / amp                                                            | Freq range (1)                                                   | -                                                       |
+
+- 🟢=ramp, 🟡=step, 🔴=hold, ☢️=random, 🗘=looping, 🕟=clocked/gated
+- 🕟☢️ refers only to non-looping gated random segments in the above table (i.e. digital shift registers); ☢️ refers to all other random segments.
 
 Single segment types in segment generator modes (* = advanced mode; all other behaviors are unchanged from original Stages):
 | Segment type          | Behavior           | Slider + CV      | Pot         | Button + slider | Button + pot        |
@@ -93,7 +96,7 @@ Single segment types in segment generator modes (* = advanced mode; all other be
 | Red gated, looping    | Gate generator     | Offset           | Probability | Quant scale     | Slider polarity     |
 | GR*                   | Double scroll      | Freq             | Slew        | Freq range      | Polarity            |
 | GR looping*           | Random LFO         | Freq             | Smoothness  | Freq range      | Polarity            |
-| GR gated*             | Turing machine     | Prob of bit flip | Steps       | Quant scale     | Polarity            |
+| GR gated*             | Dig shift reg      | Prob of bit flip | Steps       | Quant scale     | Polarity            |
 | GR gated, looping*    | Clocked random LFO | Div/mul          | Smoothness  | Div/mul range   | Polarity            |
 
 Segment types in groups (only green~red and button+pot are different from original Stages):
@@ -385,7 +388,7 @@ The frequency range in this mode can be controlled just as with the normal harmo
 Known issues
 ------------
 
-- **Having too many clocked LFOs can create tracking problems.** This firmware is somewhat more computationally intensive than the stock. As a result, clocked LFOs (which are particularly computationally intensively) can have difficulty tracking if there are too many. Currently, five clocked LFOs can be comfortably run simultaneously. Adding a sixth will give you some... interesting results.
+- **Having too many audio-rate clocked LFOs result in clicks and pops.** This firmware is somewhat more computationally intensive than the stock. As a result, clocked LFOs (which are particularly computationally intensively) can have difficulty tracking if there are too many. Currently, five clocked LFOs can be comfortably run simultaneously. Adding a sixth will give you some... interesting results.
 
 See https://github.com/qiemem/eurorack/issues for full list of issues.
 
@@ -394,6 +397,26 @@ Changelog
 
 Fork:
 
+- [v1.3.0](https://github.com/qiemem/eurorack/releases/tag/v1.3.0)
+    - Merge all behavior from the final [v1.2](https://pichenettes.github.io/mutable-instruments-documentation/modules/stages/firmware/) of the official firmware.
+    - Fix clocked LFO performance issues to allow for six clocked LFOs.
+    - Add bandlimiting to audio-rate LFOs to reduce aliasing on the original LFO shapes.
+    - Make slow LFO mode correctly chain with standard mode, not advanced mode.
+    
+- [v1.2.2](https://github.com/qiemem/eurorack/files/10714684/stages-bipolar-v1.2.2.zip) (never officially released)
+    - [Visual cheatsheet](https://raw.githubusercontent.com/qiemem/eurorack/bipolar/stages/resources/Stages%20Qiemem%20Cheatsheets.pdf) added by Philip Belesky! #44.
+    - Rework random segments to use proper, variable-shape random LFO behavior. Suggested by breach on the old MI forum (pour one out). #3
+    - Allow changing harmonic ranges in ourobor mode. Suggested by [Hanz](https://www.muffwiggler.com/forum/viewtopic.php?f=16&t=235787&start=300#p3365247) (#21) and nifgam in #37.
+    - Make trig to gate 1 in ouroboros mode reset LFO phases.
+    - Make extended sequencer in addressable mode hold on clocks.
+    - Add quantization to digital shift registers.
+    - Add LED flash when changing a digital shift register length or quantized note value.
+    - Make shift registers advance at end of succeeding step in a group to prevent value suddenly changing while affecting other segments.
+    - Only save on button release to reduce strain on flash and interruptions while adjusting button+control params.
+    - Remove codebook from quantizer to reduce memory usage.
+    - Make sure looping yellow segments track correct value when used in a multi-module group. #38
+    - Ensure changing loop status triggers a save. #33
+    - Lots of optimizations
 - [v1.1.0](https://github.com/qiemem/eurorack/releases/tag/v1.1.0)
     - Merge second version of extended sequencer mode from latest official firmware.
     - Add support for chained modules! See #13, #14, and #18. Thanks to [pyerbass](https://forum.mutable-instruments.net/t/stages-qiemems-alternative-firmware/17506/7) and others for being brave enough to test for me, to 0netwo0netwo for selling me their Stages, and to Samet for lending me their Stages!
