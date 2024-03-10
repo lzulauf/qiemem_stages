@@ -1358,9 +1358,7 @@ void SegmentGenerator::ProcessSequencer(
         case DIRECTION_ADDRESSABLE:
           hold_address_ = true;
           active_segment_ =
-              address_quantizer_.Process(parameters_[0].primary,
-                                         last_step_ - first_step_ + 1) +
-              first_step_;
+              address_quantizer_.Process(parameters_[0].primary) + first_step_;
           break;
         case DIRECTION_UP:
           ++active_segment_;
