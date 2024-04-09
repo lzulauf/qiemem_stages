@@ -82,6 +82,7 @@ struct Configuration {
   bool bipolar;
   FreqRange range; // For LFOs
   int quant_scale; // For TMs
+  bool reset_on_gate; // For LFOs
 };
 
 struct Parameters {
@@ -190,6 +191,7 @@ class SegmentGenerator {
     segments_[0].retrig = (segment_configuration.type != segment::TYPE_RAMP)
         || !segment_configuration.bipolar;
     segments_[0].quant_scale = segment_configuration.quant_scale;
+    reset_on_gate_ = segment_configuration.reset_on_gate;
     num_segments_ = 1;
     ResetPllCounter();
   }
@@ -361,6 +363,7 @@ class SegmentGenerator {
   float y_;
   float z_;
 
+  bool reset_on_gate_;
   VariableShapeOscillator audio_osc_;
 
   DISALLOW_COPY_AND_ASSIGN(SegmentGenerator);

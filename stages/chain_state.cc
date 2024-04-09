@@ -107,7 +107,7 @@ void ChainState::Reinit(const Settings& settings) {
     rightKey = kSimpleRightKey;
   } else {
     // Other modes don't use chaining, so just skip it
-   status_ = CHAIN_READY;
+    status_ = CHAIN_READY;
   }
 
   for (uint8_t i=0; i<kNumChannels; i++) {
@@ -616,15 +616,20 @@ void ChainState::HandleRequest(Settings* settings) {
   bool dirty = false;
   for (size_t i = 0; i < kNumChannels; ++i) {
     size_t channel = local_channel_index(i);
+    uint16_t config = s->segment_configuration[i];
 
-    uint8_t type_bits = s->segment_configuration[i] & 0x3;
-    uint8_t loop_bit = s->segment_configuration[i] & 0x4;
+    uint8_t type_bits = config & 0x3;
+    uint8_t loop_bit = config & 0x4;
+
+    if (!local_channel(i)->input_patched()) {
+      config &= ~0b10000000; // Reset alt gate bit
+    }
 
     if (request_.request == REQUEST_SET_SEGMENT_TYPE) {
       if (channel == request_.argument[0]) {
-        s->segment_configuration[i] &= ~0xff00; // Reset LFO range
-        s->segment_configuration[i] &= ~0b00001011; // Reset type and bipolar bits
-        s->segment_configuration[i] |= ((type_bits + 1) % num_types); // Cycle through segment types
+        config &= ~0xff00; // Reset LFO range
+        config &= ~0b10001011; // Reset type, bipolar, and input patched behavior bits
+        config |= ((type_bits + 1) % num_types); // Cycle through segment types
         dirty |= true;
       }
     } else if (request_.request == REQUEST_SET_LOOP) {
@@ -639,14 +644,19 @@ void ChainState::HandleRequest(Settings* settings) {
           new_loop_bit = 0x4;
         }
       }
-      s->segment_configuration[i] &= ~0b00000100; // Reset loop bits
-      s->segment_configuration[i] |= new_loop_bit; // Set new loop bit
+      config &= ~0b00000100;  // Reset loop bit
+      config |= new_loop_bit; // Set new loop bit
       if (new_loop_bit != loop_bit) {
         if (request_.argument[1] == request_.argument[2]) {
-          s->segment_configuration[i] &= ~0xff00; // Reset LFO range
+          // config &= ~0xff00; // Reset LFO range
+          config &= ~0b0000001100000000; // Reset LFO range
         }
         dirty = true;
       }
+    }
+    if (config != s->segment_configuration[i]) {
+      s->segment_configuration[i] = config;
+      dirty = true;
     }
   }
 
@@ -698,4 +708,4 @@ void ChainState::Update(
   ++counter_;
 }
 
-}  // namespace stages
+} // namespace stages

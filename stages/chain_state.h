@@ -165,6 +165,7 @@ class ChainState {
       segment::Configuration c = configuration();
       c.range = segment::FreqRange(local_config >> 8 & 0x03);
       c.quant_scale = local_config >> 12 & 0x03;
+      c.reset_on_gate = local_config & 0x0080;
       return c;
     }
 

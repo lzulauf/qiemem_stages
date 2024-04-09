@@ -64,6 +64,7 @@ struct PersistentData {
 //
 // New:
 //  - b00001000 (0x08) -> bipolar bit
+//  - b10000000 (0x80) -> alt gate behavior (reset for LFOs)
 //
 // Other new segment properties occupy the first 8 bits:
 //  - b00000011 (0x0300) (8)  ->  stages range

@@ -583,7 +583,7 @@ void SegmentGenerator::ProcessOscillator(
 
 
   tides::Ratio r = { 1.0f, 1 };
-  if (gate_flags) {
+  if (gate_flags && !reset_on_gate_) {
     r = function_quantizer_.Lookup(
         divider_ratios + divider_ratios_start[range],
         parameters_[0].primary * 1.03f);
@@ -643,6 +643,19 @@ void SegmentGenerator::ProcessOscillator(
           phase_ -= 1.0f;
         }
         ramp[i] = phase_;
+      }
+    } else if (reset_on_gate_) {
+      for (size_t i = 0; i < size; ++i) {
+        if (*gate_flags & GATE_FLAG_RISING) {
+          phase_ = 0.0f;
+        } else {
+          phase_ += frequency;
+          if (phase_ >= 1.0f) {
+            phase_ -= 1.0f;
+          }
+        }
+        ramp[i] = phase_;
+        ++gate_flags;
       }
     }
     if (frequency > audio_rate_threshold)
@@ -807,12 +820,27 @@ void SegmentGenerator::ProcessFreeRunningRandomLFO(
   } else {
     // phase_ gets updated in ProcessRandomFromPhase
     float phase = phase_;
-    for (size_t i = 0; i < size; ++i) {
-      phase += frequency;
-      if (phase >= 1.0f) {
-        phase -= 1.0f;
+    if (reset_on_gate_) {
+      for (size_t i = 0; i < size; ++i) {
+        if (*gate_flags & GATE_FLAG_RISING) {
+          phase = 0.0f;
+        } else {
+          phase += frequency;
+          if (phase >= 1.0f) {
+            phase -= 1.0f;
+          }
+        }
+        out[i].phase = phase;
+        ++gate_flags;
       }
-      out[i].phase = phase;
+    } else {
+      for (size_t i = 0; i < size; ++i) {
+        phase += frequency;
+        if (phase >= 1.0f) {
+          phase -= 1.0f;
+        }
+        out[i].phase = phase;
+      }
     }
     ProcessRandomFromPhase(parameters_[0].secondary, out, size);
   }
@@ -823,15 +851,19 @@ void SegmentGenerator::ProcessTapRandomLFO(
   float ramp[12];
   uint8_t range = segments_[0].range;
 
-  tides::Ratio r =
-      function_quantizer_.Lookup(divider_ratios + divider_ratios_start[range],
-                                 parameters_[0].primary * 1.03f);
+  if (reset_on_gate_) {
+    ProcessFreeRunningRandomLFO(gate_flags, out, size);
+  } else {
+    tides::Ratio r =
+        function_quantizer_.Lookup(divider_ratios + divider_ratios_start[range],
+                                   parameters_[0].primary * 1.03f);
 
-  ramp_extractor_.Process( false, false, r, gate_flags, ramp, size);
-  for (size_t i = 0; i < size; ++i) {
-    out[i].phase = ramp[i];
+    ramp_extractor_.Process( false, false, r, gate_flags, ramp, size);
+    for (size_t i = 0; i < size; ++i) {
+      out[i].phase = ramp[i];
+    }
+    ProcessRandomFromPhase(parameters_[0].secondary, out, size);
   }
-  ProcessRandomFromPhase(parameters_[0].secondary, out, size);
 }
 
 

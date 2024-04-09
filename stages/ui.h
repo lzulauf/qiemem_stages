@@ -105,6 +105,8 @@ class Ui {
   float lp_slider_[kNumChannels];
   uint8_t changing_slider_prop_;
   uint8_t changing_pot_prop_;
+  uint8_t changing_gate_prop_;
+  uint8_t not_patched_when_pressed_;
 
   LedColor led_color_[kNumLEDs];
   int slider_led_counter_[kNumLEDs];

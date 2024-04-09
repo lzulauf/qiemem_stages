@@ -109,7 +109,7 @@ void Ui::Poll() {
   // TODO: This is gross. Each mode should have its own UI handler, with a
   // generic system for changing segment properties that each can leverage.
   bool changing_prop = false;
-  if (pressed || changing_pot_prop_ || changing_slider_prop_ ||
+  if (pressed || //changing_pot_prop_ || changing_slider_prop_ ||
       cv_reader_->any_locked()) {
     uint16_t* seg_config = settings_->mutable_state()->segment_configuration;
     for (uint8_t i = 0; i < kNumChannels; ++i) {
@@ -119,6 +119,8 @@ void Ui::Poll() {
         float pot = cv_reader_->lp_pot(i);
         float locked_slider = cv_reader_->locked_slider(i);
         float locked_pot = cv_reader_->locked_pot(i);
+        bool input_patched = chain_state_->input_patched(i);
+        not_patched_when_pressed_ |= (!input_patched) << i;
 
         uint16_t old_flags = seg_config[i];
 
@@ -200,6 +202,12 @@ void Ui::Poll() {
               break;
           }
         }
+
+        if (input_patched && ((not_patched_when_pressed_ >> i) & 1) &&
+            settings_->in_seg_gen_mode()) {
+          changing_gate_prop_ |= 1 << i;
+          seg_config[i] |= 0x0080;
+        }
         dirty_ = dirty_ || seg_config[i] != old_flags;
       } else if (cv_reader_->is_locked(i)) {
         changing_pot_prop_ &= ~(1 << i);
@@ -228,10 +236,24 @@ void Ui::Poll() {
         }
       }
     }
-    changing_prop = changing_pot_prop_ || changing_slider_prop_;
-    // We're changing prop parameters
+    changing_prop =
+        changing_pot_prop_ || changing_slider_prop_ || changing_gate_prop_;
+    // We're changing prop parameters, so ignore buttons for segment type
+    // changes
     if (changing_prop) {
       chain_state_->SuspendSwitches();
+    }
+  } else {
+    changing_gate_prop_ = 0;
+    changing_slider_prop_ = 0;
+    changing_pot_prop_ = 0;
+    not_patched_when_pressed_ = 0;
+    uint16_t* seg_config = settings_->mutable_state()->segment_configuration;
+    for (uint8_t i = 0; i < kNumChannels; ++i) {
+      if ((seg_config[i] & 0b10000000) && !chain_state_->input_patched(i)) {
+        seg_config[i] &= ~0b10000000;
+        dirty_ = true;
+      }
     }
   }
   if (!pressed && dirty_) {

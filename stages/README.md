@@ -10,6 +10,7 @@ This fork further adds the following to segment generator mode:
 - **Re-trigger control**: hold a ramp segment's button and wiggle its pot to toggle re-trigger behavior; this allows for DUSG/Maths-style clock dividers, subharmonic generators, and more!
 - **Fast and slow envelopes**: Change the range of a ramp's slider by holding its button and moving the slider to the top, middle, or bottom
 - **Arbitrarily slow-clocked LFOs and improved audio-rate clocked LFOs** [^made-official]
+- **Resettable LFOs**: hold the segment's button while you patch the gate input to make the LFO reset on triggers instead of clocking
 - **Hold and step segment quantization**: Hold the segment's button and move its slider to select scale; the slider transposes within the key, allowing selection of mode
 - **Start and end value tracking for ramp segments**: This can be used as a kind of VCA or crossfader [^made-official]
 - **Probabilistic gates**: A single, looping, gated red segment's pot now controls its probability of firing, giving you a mini-branches (the pot used to do nothing in this case) [^made-official]
@@ -165,6 +166,7 @@ This fork adds the following features to this mode, none of which interfere with
 	- Fast: 1, 2, 3, 4, 5, 6, 7, 8, 12, 16
     - Hold the segment's button and move its slider to change LFO range. LFO range is indicated by the speed of the mode indicator LED's cycle. Frequency has been capped at ~7khz.
     - Holding the button and moving the slider to the very top will activate the audio-rate oscillator added to the official firmware in v1.2. These oscillators are fully bandlimited and have more diverse set of timbers.
+    - Holding the button while you patch the gate input will cause the LFO to reset on triggers instead of clocking.
 - **Time range control for ramp segments**:
     - Hold button and move slider to bottom (fast: 1 ms to 2.2 sec), middle (default: 1 ms to 16 sec), or top (slow: 16 sec to 13 min).
     - Note: Unlike with LFOs, CV range is unchanged.
@@ -245,6 +247,7 @@ When used as a single segment, random segments behave as follows:
         - Slow: 1/32, 1/16, 1/8, 1/7, 1/6, 1/5, 1/4, 1/3, 1/2, 1
         - Medium: 1/4, 1/3, 1/2, 1, 2, 3, 4 
         - Fast: 1, 2, 3, 4, 5, 6, 7, 8, 12, 16
+    - Holding the segment's button while you patch the gate input will cause the random LFO to reset on triggers instead of clocking.
 
 When used in an envelope, a **non-looping** random segment will act like a step (orange) segment with a Turing Machine as input.
 When the envelope reaches the random segment, the envelope will output the value of the segment's shift register and hold until the envelope receives another trigger.
@@ -406,6 +409,7 @@ Fork:
     - Add bandlimiting to audio-rate LFOs to reduce aliasing on the original LFO shapes.
     - Make slow LFO mode correctly chain with standard mode, not advanced mode.
     - Add flipped build for using Stages upside down. Huge thank you to James Everitt for implementing the driver changes and to chadwick for help testing!
+    - Make LFOs resettable by holding the button when patching the gate input.
 - [v1.2.2](https://github.com/qiemem/eurorack/files/10714684/stages-bipolar-v1.2.2.zip) (never officially released)
     - [Visual cheatsheet](https://raw.githubusercontent.com/qiemem/eurorack/bipolar/stages/resources/Stages%20Qiemem%20Cheatsheets.pdf) added by Philip Belesky! #44.
     - Rework random segments to use proper, variable-shape random LFO behavior. Suggested by breach on the old MI forum (pour one out). #3
