@@ -579,7 +579,7 @@ void SegmentGenerator::ProcessOscillator(
   // partially bandlimit if frequency is high enough.
   FreqRange range = segments_[0].range;
   bool audio_rate = range == segment::RANGE_AUDIO;
-  bool pll = audio_rate || pll_counter_ <= 0;
+  bool pll = audio_rate || smooth_audio_rate_tracking_;
 
 
   tides::Ratio r = { 1.0f, 1 };
@@ -590,11 +590,15 @@ void SegmentGenerator::ProcessOscillator(
     frequency =
         ramp_extractor_.Process(pll, false, r, gate_flags, ramp, size);
 
-    // Once in PLL mode, we stay there until state change.
-    if (pll_counter_ > 0 && frequency > audio_rate_threshold)
+    if (pll_counter_ > 0 && ((frequency > audio_rate_threshold) != smooth_audio_rate_tracking_)) {
       pll_counter_-=size;
-    else if (pll_counter_ > 0)
+      if (pll_counter_ <= 0) {
+        smooth_audio_rate_tracking_ = frequency > audio_rate_threshold;
+        ResetPllCounter();
+      }
+    } else if (pll_counter_ > 0) {
       ResetPllCounter();
+    }
 
   } else {
     float f = 96.0f * (parameters_[0].primary - 0.5f);

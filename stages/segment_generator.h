@@ -321,6 +321,7 @@ class SegmentGenerator {
 
   ProcessFn process_fn_;
 
+  bool smooth_audio_rate_tracking_;
   int pll_counter_;
   tides::RampExtractor ramp_extractor_;
   stmlib::HysteresisQuantizer2 function_quantizer_;
