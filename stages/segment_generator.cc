@@ -584,14 +584,18 @@ void SegmentGenerator::ProcessOscillator(
 
   tides::Ratio r = { 1.0f, 1 };
   if (gate_flags && !reset_on_gate_) {
-    r = function_quantizer_.Lookup(
-        divider_ratios + divider_ratios_start[range],
-        parameters_[0].primary * 1.03f);
-    frequency =
-        ramp_extractor_.Process(pll, false, r, gate_flags, ramp, size);
+    r = function_quantizer_.Lookup(divider_ratios + divider_ratios_start[range],
+                                   parameters_[0].primary * 1.03f);
+    frequency = ramp_extractor_.Process(pll, false, r, gate_flags, ramp, size);
+    // Check if the phase is actually changing. If its not, then frequency will
+    // be positive even though we're missing expected gates. Without this, the
+    // segment can flip to audio rate when the user unplugs a patch cable until
+    // the module figures out the cable is gone.
+    frequency *= ramp[size - 2] != ramp[size - 1];
 
-    if (pll_counter_ > 0 && ((frequency > audio_rate_threshold) != smooth_audio_rate_tracking_)) {
-      pll_counter_-=size;
+    if (pll_counter_ > 0 &&
+        ((frequency > audio_rate_threshold) != smooth_audio_rate_tracking_)) {
+      pll_counter_ -= size;
       if (pll_counter_ <= 0) {
         smooth_audio_rate_tracking_ = frequency > audio_rate_threshold;
         ResetPllCounter();
