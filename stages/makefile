@@ -59,7 +59,10 @@ wav_old:  $(TARGET_BIN)
 		-t stm32f3 -k -s 48000 -b 8000 -c 4000 -p 256 \
 		$(TARGET_BIN)
 
+export PYTHONPATH:=.:stmlib
+
 wav:  $(TARGET_BIN)
-	python stm_audio_bootloader/qpsk/encoder.py \
+	python2 stm_audio_bootloader/qpsk/encoder.py \
 		-t stm32f3 -k -s 48000 -b 12000 -c 6000 -p 256 \
 		$(TARGET_BIN)
+
