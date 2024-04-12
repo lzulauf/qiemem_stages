@@ -572,6 +572,7 @@ void SegmentGenerator::ProcessOscillator(
     size_t size) {
 
   float frequency = 0.0f;
+  bool freq_is_ar = false;
   const float root_note = root_notes[segments_[0].range];
   float ramp[size];
   // true: Use triangle -> saw -> square -> pwm pulse fully bandlimited osc
@@ -591,19 +592,18 @@ void SegmentGenerator::ProcessOscillator(
     // be positive even though we're missing expected gates. Without this, the
     // segment can flip to audio rate when the user unplugs a patch cable until
     // the module figures out the cable is gone.
-    frequency *= ramp[size - 2] != ramp[size - 1];
+    if (ramp[size - 2] == ramp[size - 1])
+      frequency = 0.0f;
 
-    if (pll_counter_ > 0 &&
-        ((frequency > audio_rate_threshold) != smooth_audio_rate_tracking_)) {
+    freq_is_ar = frequency > audio_rate_threshold;
+    if (smooth_audio_rate_tracking_ != freq_is_ar) {
       pll_counter_ -= size;
       if (pll_counter_ <= 0) {
-        smooth_audio_rate_tracking_ = frequency > audio_rate_threshold;
-        ResetPllCounter();
+        smooth_audio_rate_tracking_ = freq_is_ar;
       }
-    } else if (pll_counter_ > 0) {
+    } else {
       ResetPllCounter();
     }
-
   } else {
     float f = 96.0f * (parameters_[0].primary - 0.5f);
     CONSTRAIN(f, -128.0f, 127.0f);
@@ -611,6 +611,7 @@ void SegmentGenerator::ProcessOscillator(
     if (!audio_rate && multimode_ == MULTI_MODE_STAGES_SLOW_LFO) {
       frequency /= 8.0f;
     }
+    freq_is_ar = frequency > audio_rate_threshold;
   }
 
   if (audio_rate) {
@@ -666,7 +667,7 @@ void SegmentGenerator::ProcessOscillator(
         ++gate_flags;
       }
     }
-    if (frequency > audio_rate_threshold)
+    if (freq_is_ar)
       ShapeSplineLFO<true>(parameters_[0].secondary, frequency, ramp, out, size,
                            segments_[0].bipolar);
     else

@@ -196,8 +196,9 @@ class SegmentGenerator {
     ResetPllCounter();
   }
 
+  const int kPllCountdown = static_cast<int>(kSampleRate * 0.25f);
   inline void ResetPllCounter() {
-    pll_counter_ = static_cast<int>(kSampleRate * 0.25f);
+    pll_counter_ = kPllCountdown;
   }
 
   inline void ConfigureSlave(int i) {
