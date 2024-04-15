@@ -394,9 +394,35 @@ The frequency range in this mode can be controlled just as with the normal harmo
 Known issues
 ------------
 
-- **Having too many audio-rate clocked LFOs result in clicks and pops.** This firmware is somewhat more computationally intensive than the stock. As a result, clocked LFOs (which are particularly computationally intensively) can have difficulty tracking if there are too many. Currently, five clocked LFOs can be comfortably run simultaneously. Adding a sixth will give you some... interesting results.
+- **Having too many audio-rate clocked oscillators result in clicks and pops.** The audio-rate oscillators introduced in the official v1.2 firmware are somewhat computationally intense, as is the PLL algorithm used for clocking. Thus, when you have too many clocked oscillators, segments cana struggle to keep up, produces clicks and pops or audio distortion in the 5th or 6th segment. Currently, four clocked oscillators can be comfortably run simultaneously. Note that this issue does not affect audio-rate LFOs: you can run 6 clocked audio-rate LFOs simultaneously, and they will be bandlimited and thus sound decent at audio-rate.
 
 See https://github.com/qiemem/eurorack/issues for full list of issues.
+
+Building
+--------
+
+The typical build process for Mutable Instruments firmware involves building a virtual machine via Vagrant using the [Mutable Dev Environment](https://github.com/pichenettes/mutable-dev-environment).
+However, I have started building this fork using a more up-to-date version of the Arm GNU Toolchain and have seen improved performance of the firmware as a result.
+Thus, if you are interested in building the firmware yourself, I would recommend this approach (for Linux or MacOS):
+
+1. Download the latest release of the [bare-metall (arm-none-eabi) Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) for your platform. I use the bundles from there rather than from a package manager as the folder structure matches what the Mutable makefile expects. I currently use version 13.2.rel1.
+2. In the `eurorack-modules` directory, run
+
+```
+TOOLCHAIN_PATH=/path/to/arm-gnu-toolchain-x.x.x-platform-arm-none-eabi/ make -f stages/makefile wav
+```
+
+or add `FLIPPED=true` to build the flipped version of firmware for using the module upside down:
+
+```
+TOOLCHAIN_PATH=/path/to/arm-gnu-toolchain-x.x.x-platform-arm-none-eabi/ FLIPPED=true make -f stages/makefile wav
+```
+
+3. Install the built firmware via the [standard procedure](https://pichenettes.github.io/mutable-instruments-documentation/modules/stages/manual/#firmware). You will find the built wav files in `build/stages/stages.wav` or `build/stages-flipped/stages-flipped.wav`. I use `aplay` to do this like so:
+
+```
+aplay -V mono build/stages/stages.wav
+```
 
 Changelog
 ---------
