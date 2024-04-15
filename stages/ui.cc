@@ -250,7 +250,8 @@ void Ui::Poll() {
     not_patched_when_pressed_ = 0;
     uint16_t* seg_config = settings_->mutable_state()->segment_configuration;
     for (uint8_t i = 0; i < kNumChannels; ++i) {
-      if ((seg_config[i] & 0b10000000) && !chain_state_->input_patched(i)) {
+      if ((seg_config[i] & 0b10000000) && !chain_state_->input_patched(i) &&
+          system_clock.milliseconds() > 5000) { // give time for gate detection to occur 
         seg_config[i] &= ~0b10000000;
         dirty_ = true;
       }
