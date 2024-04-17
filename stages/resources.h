@@ -42,7 +42,7 @@ namespace stages {
 
 typedef uint8_t ResourceId;
 
-extern const float* lookup_table_table[];
+extern const float* const lookup_table_table[];
 
 extern const float lut_env_frequency[];
 extern const float lut_portamento_coefficient[];

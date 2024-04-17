@@ -29,7 +29,6 @@
 # Lookup table definitions.
 
 import numpy
-import pylab
 
 lookup_tables = []
 

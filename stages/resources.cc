@@ -1515,7 +1515,7 @@ const float lut_sine[] = {
 };
 
 
-const float* lookup_table_table[] = {
+const float* const lookup_table_table[] = {
   lut_env_frequency,
   lut_portamento_coefficient,
   lut_sine,
