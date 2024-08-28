@@ -145,6 +145,20 @@ void Process(IOBuffer::Block* block, size_t size) {
   }
 }
 
+
+int active_envelope = 0;
+boolean overriding_dahdsr[] = {false, false, false, false, false, false};
+
+void ProcessSixSeparateEgs(IOBuffer::Block* block, size_t size) {
+  // Slider LEDs
+  ui.set_slider_led(0, overriding_dahdsr[0], 1);
+  ui.set_slider_led(1, overriding_dahdsr[1], 1);
+  ui.set_slider_led(2, overriding_dahdsr[2], 1);
+  ui.set_slider_led(3, overriding_dahdsr[3], 1);
+  ui.set_slider_led(4, overriding_dahdsr[4], 1);
+  ui.set_slider_led(5, overriding_dahdsr[5], 1);
+}
+
 void ProcessSixEg(IOBuffer::Block* block, size_t size) {
 
   // Slider LEDs
