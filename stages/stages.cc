@@ -145,18 +145,48 @@ void Process(IOBuffer::Block* block, size_t size) {
   }
 }
 
-
+// The index of the currently selected envelope
 int active_envelope = 0;
+
+// For each envelope feature, whether we are currently using slider values
+// (it waits for the user to move a slider sufficiently before the value of that slider is active).
 boolean overriding_dahdsr[] = {false, false, false, false, false, false};
 
-void ProcessSixSeparateEgs(IOBuffer::Block* block, size_t size) {
-  // Slider LEDs
+// Initial slider positions (set when switching channels). This allows us to determine once the
+// user has moved a slider sufficiently.
+float initial_dahdsr_positions[] = {0, 0, 0, 0, 0, 0};
+
+void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
+  // Support six independant envelope generators
+  // Pressing a button of a non-current eg selects that envelope generator
+  // Pressing a button of the current eg activates all sliders for the current eg
+  // So setting all sliders and then double tapping each button will cause six identical egs.
+  // In general, switching egs does not immediately reflect the physical position of sliders/pots.
+  // The user must move a slider sufficiently to activate that slider's value. Activating a slider also activates it's pot.
+  // The active e.g. will blink.
+  // Sliders will blink only when active.
+  
+  // Wait 1sec at boot before checking gates
+  static int egGateWarmTime = 4000;
+  if (egGateWarmTime > 0) egGateWarmTime--;
+  
+  // Slider LEDs - indicates when a slider is active.
   ui.set_slider_led(0, overriding_dahdsr[0], 1);
   ui.set_slider_led(1, overriding_dahdsr[1], 1);
   ui.set_slider_led(2, overriding_dahdsr[2], 1);
   ui.set_slider_led(3, overriding_dahdsr[3], 1);
   ui.set_slider_led(4, overriding_dahdsr[4], 1);
   ui.set_slider_led(5, overriding_dahdsr[5], 1);
+
+  if (overriding_dahdsr[1]) {
+    eg[active_envelope].SetAttackCurve (block->pot[1]);
+  }
+  if (overriding_dahdsr[3]) {
+    eg[active_envelope].SetDecayCurve  (block->pot[3]);
+  }
+  if (overriding_dahdsr[5]) {
+    eg[active_envelope].SetReleaseCurve(block->pot[5]);
+  }
 }
 
 void ProcessSixEg(IOBuffer::Block* block, size_t size) {
