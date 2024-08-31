@@ -21,9 +21,14 @@ jobs:
     - name: submodule init
       run: git submodule init && git submodule update
 
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '2.7' 
+    - name: setup python 2.y
+      run: |
+        sudo apt update
+        sudo apt install python2
+
+    #- uses: actions/setup-python@v5
+    #  with:
+    #    python-version: '2.7' 
 
     - name: info
       run: |
