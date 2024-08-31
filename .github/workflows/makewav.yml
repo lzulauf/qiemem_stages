@@ -21,9 +21,18 @@ jobs:
     - name: submodule init
       run: git submodule init && git submodule update
 
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '2.7' 
+
     - name: info
       run: |
         pwd
+        which python
+        which python2
+        python --version
+        python2 --version
+        
     
     - name: setup arm toolchain
       run: |
