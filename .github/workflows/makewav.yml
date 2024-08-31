@@ -29,10 +29,6 @@ jobs:
         sudo python2 get-pip.py
         python2 -m pip install numpy
 
-    #- uses: actions/setup-python@v5
-    #  with:
-    #    python-version: '2.7' 
-
     - name: info
       run: |
         pwd
@@ -50,8 +46,11 @@ jobs:
 
         
     - name: make wav
-      run: |
-        make -f stages/makefile wav
-        tree build/stages
-        ls -al build/stages/
+      run: make -f stages/makefile wav
+
+    - name: upload wav
+      uses: actions/upload-artifact@v4
+      with:
+        name: stages.wav
+        path: build/stages/stages.wav
 
