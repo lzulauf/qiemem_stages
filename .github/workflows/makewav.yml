@@ -25,6 +25,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install python2
+        python2 -m pip install numpy
 
     #- uses: actions/setup-python@v5
     #  with:
