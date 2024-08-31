@@ -25,7 +25,7 @@ jobs:
     - name: setup arm toolchain
       run: |
         echo "Downloading to slightly different name to match name of extracted folder: arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi"
-        wget -O "/usr/local/arm/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi" "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz?rev=e434b9ea4afc4ed7998329566b764309&hash=CA590209F5774EE1C96E6450E14A3E26"
+        wget -O "arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi" "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz?rev=e434b9ea4afc4ed7998329566b764309&hash=CA590209F5774EE1C96E6450E14A3E26"
         tar -xf arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi
         tree arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi
 
