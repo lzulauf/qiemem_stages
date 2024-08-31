@@ -50,5 +50,8 @@ jobs:
 
         
     - name: make wav
-      run: make -f stages/makefile wav
+      run: |
+        make -f stages/makefile wav
+        tree build/stages
+        ls -al build/stages/
 
