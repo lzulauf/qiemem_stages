@@ -150,7 +150,7 @@ int active_envelope = 0;
 
 // For each envelope feature, whether we are currently using slider values
 // (it waits for the user to move a slider sufficiently before the value of that slider is active).
-boolean overriding_dahdsr[] = {false, false, false, false, false, false};
+bool overriding_dahdsr[] = {false, false, false, false, false, false};
 
 // Initial slider positions (set when switching channels). This allows us to determine once the
 // user has moved a slider sufficiently.
