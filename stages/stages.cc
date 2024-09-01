@@ -172,7 +172,7 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   static int egGateWarmTime = 4000;
   if (egGateWarmTime > 0) egGateWarmTime--;
 
-  static float slider_move_threshold = 0.1f;
+  //static float slider_move_threshold = 0.1f;
 
   // Update settings for the active envelope based on incoming cv and pot/slider information (if active).
   eg[active_envelope].SetDelayLength  (overriding_dahdsr[0] ? block->cv_slider[0] : block->cv[0]);
