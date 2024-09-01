@@ -47,7 +47,8 @@ const MultiMode Ui::multimodes_[6] = {
   MULTI_MODE_STAGES, // Mode enabled by long pressing the left-most button
   MULTI_MODE_STAGES_ADVANCED,
   MULTI_MODE_STAGES_SLOW_LFO,
-  MULTI_MODE_SIX_EG,
+  //MULTI_MODE_SIX_EG,
+  MULTI_MODE_SIX_INDEPENDENT_EGS,
   MULTI_MODE_OUROBOROS,
   MULTI_MODE_OUROBOROS_ALTERNATE, // Mode enabled by long pressing the right-most button
 };
