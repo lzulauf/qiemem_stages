@@ -23,6 +23,7 @@
 // See http://creativecommons.org/licenses/MIT/ for more information.
 
 #include <stm32f37x_conf.h>
+#include <cstdlib> // abs()
 
 #include "stmlib/dsp/dsp.h"
 
@@ -154,6 +155,7 @@ bool overriding_dahdsr[] = {false, false, false, false, false, false};
 
 // Initial slider positions (set when switching channels). This allows us to determine once the
 // user has moved a slider sufficiently.
+// We don't use slider locking, since that feature does not support locking to an arbitrary value.
 float initial_dahdsr_positions[] = {0, 0, 0, 0, 0, 0};
 
 void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
@@ -169,6 +171,8 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   // Wait 1sec at boot before checking gates
   static int egGateWarmTime = 4000;
   if (egGateWarmTime > 0) egGateWarmTime--;
+
+  static float
   
   // Slider LEDs - indicates when a slider is active.
   ui.set_slider_led(0, overriding_dahdsr[0], 1);
@@ -187,6 +191,71 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   if (overriding_dahdsr[5]) {
     eg[active_envelope].SetReleaseCurve(block->pot[5]);
   }
+
+  eg[active_envelope].SetDelayLength  (overriding_dahdsr[0] ? block->cv_slider[0] : block->cv[0]);
+  eg[active_envelope].SetAttackLength (overriding_dahdsr[1] ? block->cv_slider[1] : block->cv[1]);
+  eg[active_envelope].SetHoldLength   (overriding_dahdsr[2] ? block->cv_slider[2] : block->cv[2]);
+  eg[active_envelope].SetDecayLength  (overriding_dahdsr[3] ? block->cv_slider[3] : block->cv[3]);
+  eg[active_envelope].SetSustainLevel (overriding_dahdsr[4] ? block->cv_slider[4] : block->cv[4]);
+  eg[active_envelope].SetReleaseLength(overriding_dahdsr[5] ? block->cv_slider[5] : block->cv[5]);
+
+  for (size_t ch = 0; ch < kNumChannels; ch++) {
+    if (egGateWarmTime == 0 && block->input_patched[ch]) {
+      for (size_t i = 0; i < size; i++) {
+        if (block->input[ch][i] & GATE_FLAG_HIGH) {
+          gate = true;
+          break;
+        }
+      }
+    }
+    eg[ch].Gate(gate);
+    // ui.set_led(ch, gate ? LED_COLOR_RED : LED_COLOR_OFF);
+
+    // Compute value and set as output
+    float value = eg[ch].Value();
+    for (size_t i = 0; i < size; i++) {
+      block->output[ch][i] = settings.dac_code(ch, value);
+    }
+
+    // Display current stage
+    switch (eg[ch].CurrentStage()) {
+      case DELAY:
+      case ATTACK:
+      case HOLD:
+      case DECAY:
+        ui.set_led(ch, LED_COLOR_GREEN);
+        break;
+      case SUSTAIN:
+        ui.set_led(ch, LED_COLOR_YELLOW);
+        break;
+      case RELEASE:
+        ui.set_led(ch, LED_COLOR_RED);
+        break;
+      default:
+        ui.set_led(ch, ch == active_envelope ? LED_COLOR_BLUE : LED_COLOR_OFF);
+        break;
+    }
+    
+    // Check if slider has moved sufficiently to enable overrides
+    if (abs(block->slider[ch] - initial_dahdsr_positions[ch]) > 0.1f) {
+      overriding_dahdsr[ch] = true;
+    }
+    if (ui.switches().pressed(ch)) {
+      if (ch == active_envelope) {      
+        // Pressing the active channel enables all sliders and pots
+        fill(&overriding_dahdsr[0], &overriding_dahdsr[size], true);
+      } else {
+        // Pressing an inactive channel switches to that channel
+        active_envelope = ch;
+        // Disable all slider overrides
+        fill(&overriding_dahdsr[0], &overriding_dahdsr[size], false);
+        // Record initial slider positions
+        for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
+          initial_dahdsr_positions[slider_index] = block->slider[slider_index];
+        }
+      }
+    }
+    
 }
 
 void ProcessSixEg(IOBuffer::Block* block, size_t size) {
@@ -479,6 +548,9 @@ int main(void) {
       switch ((MultiMode) settings.state().multimode) {
         case MULTI_MODE_SIX_EG:
           io_buffer.Process(&ProcessSixEg);
+          break;
+        case MULTI_MODE_SIX_INDEPENDENT_EGS:
+          io_buffer.Process(&ProcessSixIndependentEgs);
           break;
         case MULTI_MODE_OUROBOROS:
         case MULTI_MODE_OUROBOROS_ALTERNATE:
