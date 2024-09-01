@@ -195,7 +195,9 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   for (size_t ch = 0; ch < kNumChannels; ch++) {
     
     // Set Slider LED to indicate whether slider is active for curent envelope.
-    ui.set_slider_led(ch, overriding_dahdsr[ch], 1);
+    //ui.set_slider_led(ch, overriding_dahdsr[ch], 1);
+    ui.set_slider_led(ch, ch % 2 == 0, 1);
+    ui.set_led(ch, ch % 2 == 1 ? LED_COLOR_GREEN : LED_COLOR_RED);
 
     // Detect gate inputs and pass to corresponding envelope
     bool gate = false;
@@ -210,23 +212,23 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
     eg[ch].Gate(gate);
 
     // Set LED to indicate stage of the channel's envelope. Active channel is lit rather than off when idle.
-    switch (eg[ch].CurrentStage()) {
-      case DELAY:
-      case ATTACK:
-      case HOLD:
-      case DECAY:
-        ui.set_led(ch, LED_COLOR_GREEN);
-        break;
-      case SUSTAIN:
-        ui.set_led(ch, LED_COLOR_YELLOW);
-        break;
-      case RELEASE:
-        ui.set_led(ch, LED_COLOR_RED);
-        break;
-      default:
-        ui.set_led(ch, ch == active_envelope ? LED_COLOR_YELLOW : LED_COLOR_OFF);
-        break;
-    }
+    //switch (eg[ch].CurrentStage()) {
+    //  case DELAY:
+    //  case ATTACK:
+    //  case HOLD:
+    //  case DECAY:
+    //    ui.set_led(ch, LED_COLOR_GREEN);
+    //    break;
+    //  case SUSTAIN:
+    //    ui.set_led(ch, LED_COLOR_YELLOW);
+    //    break;
+    //  case RELEASE:
+    //    ui.set_led(ch, LED_COLOR_RED);
+    //    break;
+    //  default:
+    //    ui.set_led(ch, ch == active_envelope ? LED_COLOR_YELLOW : LED_COLOR_OFF);
+    //    break;
+    //}
 
     // Compute output values for each envelope
     float value = eg[ch].Value();
@@ -244,21 +246,21 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
       if (ch == active_envelope) {      
         // Pressing the active channel enables all sliders and pots
         //fill(&overriding_dahdsr[0], &overriding_dahdsr[size], true);
-        for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
-          overriding_dahdsr[slider_index] = true;
-        }
+        //for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
+        //  overriding_dahdsr[slider_index] = true;
+        //}
       } else {
         // Pressing an inactive channel switches to that channel
         active_envelope = ch;
         // Disable all slider overrides
         //fill(&overriding_dahdsr[0], &overriding_dahdsr[size], false);
-        for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
-          overriding_dahdsr[slider_index] = ((slider_index % 2) == 0);
-        }
+        //for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
+        //  overriding_dahdsr[slider_index] = ((slider_index % 2) == 0);
+        //}
         // Record initial slider positions
-        for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
-          initial_dahdsr_positions[slider_index] = block->slider[slider_index];
-        }
+        //for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
+        //  initial_dahdsr_positions[slider_index] = block->slider[slider_index];
+        //}
       }
     }
   }
