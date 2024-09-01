@@ -256,7 +256,7 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
         }
       }
     }
-    
+  }
 }
 
 void ProcessSixEg(IOBuffer::Block* block, size_t size) {
