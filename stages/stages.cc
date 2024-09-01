@@ -147,7 +147,7 @@ void Process(IOBuffer::Block* block, size_t size) {
 }
 
 // The index of the currently selected envelope
-int active_envelope = 0;
+size_t active_envelope = 0;
 
 // For each envelope feature, whether we are currently using slider values
 // (it waits for the user to move a slider sufficiently before the value of that slider is active).
