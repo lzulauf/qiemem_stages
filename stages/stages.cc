@@ -233,7 +233,7 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
         ui.set_led(ch, LED_COLOR_RED);
         break;
       default:
-        ui.set_led(ch, ch == active_envelope ? LED_COLOR_BLUE : LED_COLOR_OFF);
+        ui.set_led(ch, ch == active_envelope ? LED_COLOR_YELLOW : LED_COLOR_OFF);
         break;
     }
     
