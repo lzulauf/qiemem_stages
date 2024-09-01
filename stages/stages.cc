@@ -172,7 +172,7 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   static int egGateWarmTime = 4000;
   if (egGateWarmTime > 0) egGateWarmTime--;
 
-  static float
+  static float slider_move_threshold = 0.1f;
   
   // Slider LEDs - indicates when a slider is active.
   ui.set_slider_led(0, overriding_dahdsr[0], 1);
@@ -237,7 +237,7 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
     }
     
     // Check if slider has moved sufficiently to enable overrides
-    if (abs(block->slider[ch] - initial_dahdsr_positions[ch]) > 0.1f) {
+    if (abs(block->slider[ch] - initial_dahdsr_positions[ch]) > slider_move_threshold) {
       overriding_dahdsr[ch] = true;
     }
     if (ui.switches().pressed(ch)) {
