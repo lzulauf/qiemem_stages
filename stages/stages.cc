@@ -165,7 +165,7 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   // So setting all sliders and then double tapping each button will cause six identical egs.
   // In general, switching egs does not immediately reflect the physical position of sliders/pots.
   // The user must move a slider sufficiently to activate that slider's value. Activating a slider also activates it's pot.
-  // The active e.g. will blink.
+  // The active envelope will also respond to cv inputs on all channels. The values will be frozen when switching to another envelope.
   // Sliders will blink only when active.
   
   // Wait 1sec at boot before checking gates
@@ -173,15 +173,14 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   if (egGateWarmTime > 0) egGateWarmTime--;
 
   static float slider_move_threshold = 0.1f;
-  
-  // Slider LEDs - indicates when a slider is active.
-  ui.set_slider_led(0, overriding_dahdsr[0], 1);
-  ui.set_slider_led(1, overriding_dahdsr[1], 1);
-  ui.set_slider_led(2, overriding_dahdsr[2], 1);
-  ui.set_slider_led(3, overriding_dahdsr[3], 1);
-  ui.set_slider_led(4, overriding_dahdsr[4], 1);
-  ui.set_slider_led(5, overriding_dahdsr[5], 1);
 
+  // Update settings for the active envelope based on incoming cv and pot/slider information (if active).
+  eg[active_envelope].SetDelayLength  (overriding_dahdsr[0] ? block->cv_slider[0] : block->cv[0]);
+  eg[active_envelope].SetAttackLength (overriding_dahdsr[1] ? block->cv_slider[1] : block->cv[1]);
+  eg[active_envelope].SetHoldLength   (overriding_dahdsr[2] ? block->cv_slider[2] : block->cv[2]);
+  eg[active_envelope].SetDecayLength  (overriding_dahdsr[3] ? block->cv_slider[3] : block->cv[3]);
+  eg[active_envelope].SetSustainLevel (overriding_dahdsr[4] ? block->cv_slider[4] : block->cv[4]);
+  eg[active_envelope].SetReleaseLength(overriding_dahdsr[5] ? block->cv_slider[5] : block->cv[5]);
   if (overriding_dahdsr[1]) {
     eg[active_envelope].SetAttackCurve (block->pot[1]);
   }
@@ -192,14 +191,13 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
     eg[active_envelope].SetReleaseCurve(block->pot[5]);
   }
 
-  eg[active_envelope].SetDelayLength  (overriding_dahdsr[0] ? block->cv_slider[0] : block->cv[0]);
-  eg[active_envelope].SetAttackLength (overriding_dahdsr[1] ? block->cv_slider[1] : block->cv[1]);
-  eg[active_envelope].SetHoldLength   (overriding_dahdsr[2] ? block->cv_slider[2] : block->cv[2]);
-  eg[active_envelope].SetDecayLength  (overriding_dahdsr[3] ? block->cv_slider[3] : block->cv[3]);
-  eg[active_envelope].SetSustainLevel (overriding_dahdsr[4] ? block->cv_slider[4] : block->cv[4]);
-  eg[active_envelope].SetReleaseLength(overriding_dahdsr[5] ? block->cv_slider[5] : block->cv[5]);
-
+  // Process each channel
   for (size_t ch = 0; ch < kNumChannels; ch++) {
+    
+    // Set Slider LED to indicate whether slider is active for curent envelope.
+    ui.set_slider_led(ch, overriding_dahdsr[ch], 1);
+
+    // Detect gate inputs and pass to corresponding envelope
     bool gate = false;
     if (egGateWarmTime == 0 && block->input_patched[ch]) {
       for (size_t i = 0; i < size; i++) {
@@ -210,15 +208,8 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
       }
     }
     eg[ch].Gate(gate);
-    // ui.set_led(ch, gate ? LED_COLOR_RED : LED_COLOR_OFF);
 
-    // Compute value and set as output
-    float value = eg[ch].Value();
-    for (size_t i = 0; i < size; i++) {
-      block->output[ch][i] = settings.dac_code(ch, value);
-    }
-
-    // Display current stage
+    // Set LED to indicate stage of the channel's envelope. Active channel is lit rather than off when idle.
     switch (eg[ch].CurrentStage()) {
       case DELAY:
       case ATTACK:
@@ -236,20 +227,34 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
         ui.set_led(ch, ch == active_envelope ? LED_COLOR_YELLOW : LED_COLOR_OFF);
         break;
     }
+
+    // Compute output values for each envelope
+    float value = eg[ch].Value();
+    for (size_t i = 0; i < size; i++) {
+      block->output[ch][i] = settings.dac_code(ch, value);
+    }
     
     // Check if slider has moved sufficiently to enable overrides
-    if (abs(block->slider[ch] - initial_dahdsr_positions[ch]) > slider_move_threshold) {
-      overriding_dahdsr[ch] = true;
-    }
+    //if (abs(block->slider[ch] - initial_dahdsr_positions[ch]) > slider_move_threshold) {
+    //  overriding_dahdsr[ch] = true;
+    //}
+
+    // Check if button is pressed to switch channels or activate all sliders.
     if (ui.switches().pressed(ch)) {
       if (ch == active_envelope) {      
         // Pressing the active channel enables all sliders and pots
-        fill(&overriding_dahdsr[0], &overriding_dahdsr[size], true);
+        //fill(&overriding_dahdsr[0], &overriding_dahdsr[size], true);
+        for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
+          overriding_dahdsr[slider_index] = true;
+        }
       } else {
         // Pressing an inactive channel switches to that channel
         active_envelope = ch;
         // Disable all slider overrides
-        fill(&overriding_dahdsr[0], &overriding_dahdsr[size], false);
+        //fill(&overriding_dahdsr[0], &overriding_dahdsr[size], false);
+        for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
+          overriding_dahdsr[slider_index] = ((slider_index % 2) == 0);
+        }
         // Record initial slider positions
         for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
           initial_dahdsr_positions[slider_index] = block->slider[slider_index];
