@@ -200,6 +200,7 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   eg[active_envelope].SetReleaseLength(overriding_dahdsr[5] ? block->cv_slider[5] : block->cv[5]);
 
   for (size_t ch = 0; ch < kNumChannels; ch++) {
+    bool gate = false;
     if (egGateWarmTime == 0 && block->input_patched[ch]) {
       for (size_t i = 0; i < size; i++) {
         if (block->input[ch][i] & GATE_FLAG_HIGH) {
