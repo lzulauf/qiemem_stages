@@ -1,4 +1,4 @@
-name: Makefile CI
+name: Make Wav
 
 on:
   workflow_dispatch:
