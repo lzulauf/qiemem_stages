@@ -168,14 +168,14 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   // The active envelope will also respond to cv inputs on all channels. The values will be frozen when switching to another envelope.
   // Sliders will blink only when active.
 
-  for (size_t ch = 0; ch < kNumChannels; ch++) {
-    
-    // Set Slider LED to indicate whether slider is active for curent envelope.
-    //ui.set_slider_led(ch, overriding_dahdsr[ch], 1);
-    ui.set_slider_led(ch, true, 1);
-    ui.set_led(ch, LED_COLOR_GREEN);
-  }
-  return;
+  //for (size_t ch = 0; ch < kNumChannels; ch++) {
+  //  
+  //  // Set Slider LED to indicate whether slider is active for curent envelope.
+  //  ui.set_slider_led(ch, overriding_dahdsr[ch], 1);
+  //  ui.set_slider_led(ch, true, 1);
+  //  ui.set_led(ch, LED_COLOR_GREEN);
+  //}
+  //return;
   
   // Wait 1sec at boot before checking gates
   static int egGateWarmTime = 4000;
