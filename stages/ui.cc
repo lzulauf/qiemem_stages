@@ -473,6 +473,14 @@ void Ui::UpdateLEDs() {
         leds_.set(LED_GROUP_SLIDER + i, slider_led_counter_[i] ? LED_COLOR_GREEN : LED_COLOR_OFF);
       }
 
+    } else if (multimode == MULTI_MODE_SIX_INDEPENDENT_EGS) {
+
+      // LEDs update for 6IEG mode
+      for (size_t i = 0; i < kNumChannels; ++i) {
+        leds_.set(LED_GROUP_UI + i, led_color_[i]);
+        leds_.set(LED_GROUP_SLIDER + i, slider_led_counter_[i] ? LED_COLOR_GREEN : LED_COLOR_OFF);
+      }
+
     } else {
 
       // Invalid mode, turn all off
