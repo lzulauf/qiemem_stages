@@ -239,16 +239,16 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
     }
     
     // Check if slider has moved sufficiently to enable overrides
-    //if (abs(block->slider[ch] - initial_dahdsr_positions[ch]) > slider_move_threshold) {
-    //  overriding_dahdsr[ch] = true;
-    //}
+    if (abs(block->slider[ch] - initial_dahdsr_positions[ch]) > slider_move_threshold) {
+      overriding_dahdsr[ch] = true;
+    }
 
     // Check if button is pressed to switch channels or activate all sliders.
     // Ignore switch presses if recently switched.
     if (!activeChannelSwitchTime && ui.switches().pressed(ch)) {
-      // Once a switch is pressed, delay processing switches for 1 one second.
+      // Once a switch is pressed, delay processing switches for 1/4 second.
       // This is a super cheap debounce.
-      activeChannelSwitchTime = 4000;
+      activeChannelSwitchTime = 1000;
       if (ch == active_envelope) {      
         // Pressing the active channel enables all sliders and pots
         //fill(&overriding_dahdsr[0], &overriding_dahdsr[size], true);
@@ -261,7 +261,8 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
         // Disable all slider overrides
         //fill(&overriding_dahdsr[0], &overriding_dahdsr[size], false);
         for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
-          overriding_dahdsr[slider_index] = ((slider_index % 2) == 0);
+          //overriding_dahdsr[slider_index] = ((slider_index % 2) == 0);
+          overriding_dahdsr[slider_index] = false;
         }
         // Record initial slider positions
         for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
