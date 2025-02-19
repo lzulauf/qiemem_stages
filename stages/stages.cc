@@ -172,6 +172,10 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   static int egGateWarmTime = 4000;
   if (egGateWarmTime > 0) egGateWarmTime--;
 
+  // Disallow channel switching for one second on startup (and also every time the channel is switched - see below).
+  static int activeChannelSwitchTime = 4000;
+  if (activeChannelSwitchTime > 0) --activeChannelSwitchTime;
+
   //static float slider_move_threshold = 0.1f;
 
   // Update settings for the active envelope based on incoming cv and pot/slider information (if active).
@@ -240,7 +244,11 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
     //}
 
     // Check if button is pressed to switch channels or activate all sliders.
-    if (ui.switches().pressed(ch)) {
+    // Ignore switch presses if recently switched.
+    if (!activeChannelSwitchTime && ui.switches().pressed(ch)) {
+      // Once a switch is pressed, delay processing switches for 1 one second.
+      // This is a super cheap debounce.
+      activeChannelSwitchTime = 4000;
       if (ch == active_envelope) {      
         // Pressing the active channel enables all sliders and pots
         //fill(&overriding_dahdsr[0], &overriding_dahdsr[size], true);
