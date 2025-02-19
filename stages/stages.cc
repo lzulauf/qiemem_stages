@@ -179,19 +179,43 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   static float slider_move_threshold = 0.1f;
 
   // Update settings for the active envelope based on incoming cv and pot/slider information (if active).
-  eg[active_envelope].SetDelayLength  (overriding_dahdsr[0] ? block->cv_slider[0] : block->cv[0]);
-  eg[active_envelope].SetAttackLength (overriding_dahdsr[1] ? block->cv_slider[1] : block->cv[1]);
-  eg[active_envelope].SetHoldLength   (overriding_dahdsr[2] ? block->cv_slider[2] : block->cv[2]);
-  eg[active_envelope].SetDecayLength  (overriding_dahdsr[3] ? block->cv_slider[3] : block->cv[3]);
-  eg[active_envelope].SetSustainLevel (overriding_dahdsr[4] ? block->cv_slider[4] : block->cv[4]);
-  eg[active_envelope].SetReleaseLength(overriding_dahdsr[5] ? block->cv_slider[5] : block->cv[5]);
+  // eg[active_envelope].SetDelayLength  (overriding_dahdsr[0] ? block->cv_slider[0] : block->cv[0]);
+  // eg[active_envelope].SetAttackLength (overriding_dahdsr[1] ? block->cv_slider[1] : block->cv[1]);
+  // eg[active_envelope].SetHoldLength   (overriding_dahdsr[2] ? block->cv_slider[2] : block->cv[2]);
+  // eg[active_envelope].SetDecayLength  (overriding_dahdsr[3] ? block->cv_slider[3] : block->cv[3]);
+  // eg[active_envelope].SetSustainLevel (overriding_dahdsr[4] ? block->cv_slider[4] : block->cv[4]);
+  // eg[active_envelope].SetReleaseLength(overriding_dahdsr[5] ? block->cv_slider[5] : block->cv[5]);
+  // if (overriding_dahdsr[1]) {
+  //   eg[active_envelope].SetAttackCurve (block->pot[1]);
+  // }
+  // if (overriding_dahdsr[3]) {
+  //   eg[active_envelope].SetDecayCurve  (block->pot[3]);
+  // }
+  // if (overriding_dahdsr[5]) {
+  //   eg[active_envelope].SetReleaseCurve(block->pot[5]);
+  // }
+
+  // Don't support cv input for now...
+  // it causes us to forget what the value was previously set to... We would need to remember all prior slider positions and add them to the cv...
+  if (overriding_dahdsr[0]) {
+    eg[active_envelope].SetDelayLength(block->cv_slider[0]);
+  }
   if (overriding_dahdsr[1]) {
+    eg[active_envelope].SetAttackLength(block->cv_slider[1]);
     eg[active_envelope].SetAttackCurve (block->pot[1]);
   }
+  if (overriding_dahdsr[2]) {
+    eg[active_envelope].SetHoldLength(block->cv_slider[2]);
+  }
   if (overriding_dahdsr[3]) {
+    eg[active_envelope].SetDecayLength(block->cv_slider[3]);
     eg[active_envelope].SetDecayCurve  (block->pot[3]);
   }
+  if (overriding_dahdsr[4]) {
+    eg[active_envelope].SetSustainLevel(block->cv_slider[4]);
+  }
   if (overriding_dahdsr[5]) {
+    eg[active_envelope].SetReleaseLength(block->cv_slider[5]);
     eg[active_envelope].SetReleaseCurve(block->pot[5]);
   }
 
