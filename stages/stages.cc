@@ -567,8 +567,8 @@ int main(void) {
           io_buffer.Process(&ProcessSixEg);
           break;
         case MULTI_MODE_SIX_INDEPENDENT_EGS:
-          io_buffer.Process(&ProcessSixEg);
-          //io_buffer.Process(&ProcessSixIndependentEgs);
+          //io_buffer.Process(&ProcessSixEg);
+          io_buffer.Process(&ProcessSixIndependentEgs);
           break;
         case MULTI_MODE_OUROBOROS:
         case MULTI_MODE_OUROBOROS_ALTERNATE:
