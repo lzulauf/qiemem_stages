@@ -2,10 +2,6 @@ name: Make Wav
 
 on:
   workflow_dispatch:
-  #push:
-  #  branches: [ "*" ]
-  #pull_request:
-  #  branches: [ "*" ]
 
 jobs:
   build_wav:
@@ -53,4 +49,3 @@ jobs:
       with:
         name: stages.wav
         path: build/stages/stages.wav
-
