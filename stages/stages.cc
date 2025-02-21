@@ -146,28 +146,27 @@ void Process(IOBuffer::Block* block, size_t size) {
   }
 }
 
-// The index of the currently selected envelope
-size_t active_envelope = 0;
-
-// For each envelope feature, whether we are currently using slider values
-// (it waits for the user to move a slider sufficiently before the value of that slider is active).
-bool overriding_dahdsr[] = {false, false, false, false, false, false};
-
-// Initial slider positions (set when switching channels). This allows us to determine once the
-// user has moved a slider sufficiently.
-// We don't use slider locking, since that feature does not support locking to an arbitrary value.
-float initial_dahdsr_positions[] = {0, 0, 0, 0, 0, 0};
-
 void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   // Support six independant envelope generators
-  // Pressing a button of a non-current eg selects that envelope generator
-  // Pressing a button of the current eg activates all sliders for the current eg
-  // So setting all sliders and then double tapping each button will cause six identical egs.
-  // In general, switching egs does not immediately reflect the physical position of sliders/pots.
-  // The user must move a slider sufficiently to activate that slider's value. Activating a slider also activates it's pot.
-  // The active envelope will also respond to cv inputs on all channels. The values will be frozen when switching to another envelope.
-  // Sliders will blink only when active.
+  //
+  // Pressing a the button corresponding to a non-active envelope generator
+  // sets that envelope generator as the active envelope generator. Pressing a
+  // button corresponding to the active envelope generator enables all sliders.
+  // Therefore, setting all sliders and then double tapping each button will
+  // set six identical envelope generators.
+  //
+  // In general, switching egs does not immediately reflect the physical
+  // position of sliders and pots. The user must move a slider sufficiently to
+  // enable it. Activating a slider also activates its pot and cv inputs.
+  // Slider leds will be green when that slider is enabled.
+  //
+  // If no input cable is plugged into an envelope generator's gate input, then
+  // the previous envelope generator's gate input is used. This allows a single
+  // input to trigger multiple envelope generators.
   
+  // The index of the currently selected envelope
+  static size_t active_envelope = 0;
+
   // Wait 1sec at boot before checking gates
   static int egGateWarmTime = 4000;
   if (egGateWarmTime > 0) egGateWarmTime--;
@@ -176,58 +175,84 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   static int activeChannelSwitchTime = 4000;
   if (activeChannelSwitchTime > 0) --activeChannelSwitchTime;
 
-  static float slider_move_threshold = 0.1f;
+  // Initial slider positions (set when switching channels). This allows us to determine once the
+  // user has moved a slider sufficiently.
+  // We don't use slider locking, since that feature does not support locking to an arbitrary value.
+  static float initial_slider_positions[] = {0, 0, 0, 0, 0, 0};
+  static float slider_move_threshold = 0.05f;
 
-  // Update settings for the active envelope based on incoming cv and pot/slider information (if active).
-  // eg[active_envelope].SetDelayLength  (overriding_dahdsr[0] ? block->cv_slider[0] : block->cv[0]);
-  // eg[active_envelope].SetAttackLength (overriding_dahdsr[1] ? block->cv_slider[1] : block->cv[1]);
-  // eg[active_envelope].SetHoldLength   (overriding_dahdsr[2] ? block->cv_slider[2] : block->cv[2]);
-  // eg[active_envelope].SetDecayLength  (overriding_dahdsr[3] ? block->cv_slider[3] : block->cv[3]);
-  // eg[active_envelope].SetSustainLevel (overriding_dahdsr[4] ? block->cv_slider[4] : block->cv[4]);
-  // eg[active_envelope].SetReleaseLength(overriding_dahdsr[5] ? block->cv_slider[5] : block->cv[5]);
-  // if (overriding_dahdsr[1]) {
-  //   eg[active_envelope].SetAttackCurve (block->pot[1]);
-  // }
-  // if (overriding_dahdsr[3]) {
-  //   eg[active_envelope].SetDecayCurve  (block->pot[3]);
-  // }
-  // if (overriding_dahdsr[5]) {
-  //   eg[active_envelope].SetReleaseCurve(block->pot[5]);
-  // }
+  // For each envelope feature, whether we are currently using slider values
+  // Slider positions are ignored for the active envelope until the user moves them sufficiently to activate them.
+  static bool slider_enabled[] = {false, false, false, false, false, false};
 
-  // Don't support cv input for now...
-  // it causes us to forget what the value was previously set to... We would need to remember all prior slider positions and add them to the cv...
-  if (overriding_dahdsr[0]) {
-    eg[active_envelope].SetDelayLength(block->cv_slider[0]);
+  // Handle for channel switch presses
+  for (size_t ch = 0; ch < kNumChannels; ch++) {
+    // Check if button is pressed to switch channels or activate all sliders.
+    // Ignore switch presses if recently switched.
+    if (!activeChannelSwitchTime && ui.switches().pressed(ch)) {
+      // Once a switch is pressed, delay processing switches for 1/4 second.
+      // This is essentially a super basic debounce.
+      activeChannelSwitchTime = 1000;
+
+      if (ch == active_envelope) {      
+        // Pressing the active channel enables all sliders and pots
+        fill(&slider_enabled[0], &slider_enabled[size], true);
+      } else {
+        // Pressing an inactive channel switches to that channel
+        // Record initial slider positions after switch and set all sliders to inactive
+        active_envelope = ch;
+        fill(&slider_enabled[0], &slider_enabled[size], false);
+        for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
+          initial_slider_positions[slider_index] = block->slider[slider_index];
+        }
+      }
+    }
   }
-  if (overriding_dahdsr[1]) {
-    eg[active_envelope].SetAttackLength(block->cv_slider[1]);
+
+
+  // Update envelope parameters for active envelope.
+  //
+  // n.b. cv inputs only apply to active envelope and only if overriding dahdsr.
+  // This allows cv to directly offset the slider position. Otherwise we would need to track separate
+  // "virtual" slider positions for each envelope.
+  if (slider_enabled[0]) {
+    eg[active_envelope].SetDelayLength(block->cv_slider[0] + block->cv[0]);
+  }
+  if (slider_enabled[1]) {
+    eg[active_envelope].SetAttackLength(block->cv_slider[1] + block->cv[1]);
     eg[active_envelope].SetAttackCurve (block->pot[1]);
   }
-  if (overriding_dahdsr[2]) {
-    eg[active_envelope].SetHoldLength(block->cv_slider[2]);
+  if (slider_enabled[2]) {
+    eg[active_envelope].SetHoldLength(block->cv_slider[2] + block->cv[2]);
   }
-  if (overriding_dahdsr[3]) {
-    eg[active_envelope].SetDecayLength(block->cv_slider[3]);
+  if (slider_enabled[3]) {
+    eg[active_envelope].SetDecayLength(block->cv_slider[3] + block->cv[3]);
     eg[active_envelope].SetDecayCurve  (block->pot[3]);
   }
-  if (overriding_dahdsr[4]) {
-    eg[active_envelope].SetSustainLevel(block->cv_slider[4]);
+  if (slider_enabled[4]) {
+    eg[active_envelope].SetSustainLevel(block->cv_slider[4] + block->cv[4]);
   }
-  if (overriding_dahdsr[5]) {
-    eg[active_envelope].SetReleaseLength(block->cv_slider[5]);
+  if (slider_enabled[5]) {
+    eg[active_envelope].SetReleaseLength(block->cv_slider[5] + block->cv[5]);
     eg[active_envelope].SetReleaseCurve(block->pot[5]);
   }
 
   // Process each channel
+  bool gate = false;
   for (size_t ch = 0; ch < kNumChannels; ch++) {
     
-    // Set Slider LED to indicate whether slider is active for curent envelope.
-    ui.set_slider_led(ch, overriding_dahdsr[ch], 1);
+    // Check if slider has moved sufficiently to enable the slider for the active envelope.
+    if (abs(block->slider[ch] - initial_slider_positions[ch]) > slider_move_threshold) {
+      slider_enabled[ch] = true;
+    }
 
-    // Detect gate inputs and pass to corresponding envelope
-    bool gate = false;
+    // Set Slider LED to indicate whether slider is active for curent envelope.
+    ui.set_slider_led(ch, slider_enabled[ch], 1);
+
+    // Check for gates. If the input is not patched, the previous channel's
+    // gate status will be used.
     if (egGateWarmTime == 0 && block->input_patched[ch]) {
+      gate = false;
       for (size_t i = 0; i < size; i++) {
         if (block->input[ch][i] & GATE_FLAG_HIGH) {
           gate = true;
@@ -260,39 +285,6 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
     float value = eg[ch].Value();
     for (size_t i = 0; i < size; i++) {
       block->output[ch][i] = settings.dac_code(ch, value);
-    }
-    
-    // Check if slider has moved sufficiently to enable overrides
-    if (abs(block->slider[ch] - initial_dahdsr_positions[ch]) > slider_move_threshold) {
-      overriding_dahdsr[ch] = true;
-    }
-
-    // Check if button is pressed to switch channels or activate all sliders.
-    // Ignore switch presses if recently switched.
-    if (!activeChannelSwitchTime && ui.switches().pressed(ch)) {
-      // Once a switch is pressed, delay processing switches for 1/4 second.
-      // This is a super cheap debounce.
-      activeChannelSwitchTime = 1000;
-      if (ch == active_envelope) {      
-        // Pressing the active channel enables all sliders and pots
-        //fill(&overriding_dahdsr[0], &overriding_dahdsr[size], true);
-        for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
-          overriding_dahdsr[slider_index] = true;
-        }
-      } else {
-        // Pressing an inactive channel switches to that channel
-        active_envelope = ch;
-        // Disable all slider overrides
-        //fill(&overriding_dahdsr[0], &overriding_dahdsr[size], false);
-        for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
-          //overriding_dahdsr[slider_index] = ((slider_index % 2) == 0);
-          overriding_dahdsr[slider_index] = false;
-        }
-        // Record initial slider positions
-        for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
-          initial_dahdsr_positions[slider_index] = block->slider[slider_index];
-        }
-      }
     }
   }
 }

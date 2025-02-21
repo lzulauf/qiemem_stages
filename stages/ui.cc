@@ -465,17 +465,8 @@ void Ui::UpdateLEDs() {
             slider_led_counter_[i] ? LED_COLOR_GREEN : LED_COLOR_OFF);
       }
 
-    } else if (multimode == MULTI_MODE_SIX_EG) {
-
-      // LEDs update for 6EG mode
-      for (size_t i = 0; i < kNumChannels; ++i) {
-        leds_.set(LED_GROUP_UI + i, led_color_[i]);
-        leds_.set(LED_GROUP_SLIDER + i, slider_led_counter_[i] ? LED_COLOR_GREEN : LED_COLOR_OFF);
-      }
-
-    } else if (multimode == MULTI_MODE_SIX_INDEPENDENT_EGS) {
-
-      // LEDs update for 6IEG mode
+    } else if (multimode == MULTI_MODE_SIX_EG || multimode == MULTI_MODE_SIX_INDEPENDENT_EGS) {
+      // LEDs update for 6EG and 6IEG modes
       for (size_t i = 0; i < kNumChannels; ++i) {
         leds_.set(LED_GROUP_UI + i, led_color_[i]);
         leds_.set(LED_GROUP_SLIDER + i, slider_led_counter_[i] ? LED_COLOR_GREEN : LED_COLOR_OFF);
