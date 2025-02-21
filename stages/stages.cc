@@ -183,7 +183,8 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
 
   // For each envelope feature, whether we are currently using slider values
   // Slider positions are ignored for the active envelope until the user moves them sufficiently to activate them.
-  static bool slider_enabled[] = {false, false, false, false, false, false};
+  // Proactively set them as enabled on bootup, however.
+  static bool slider_enabled[] = {true, true, true, true, true, true};
 
   // Handle for channel switch presses
   for (size_t ch = 0; ch < kNumChannels; ch++) {
@@ -208,7 +209,6 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
       }
     }
   }
-
 
   // Update envelope parameters for active envelope.
   //
