@@ -23,7 +23,7 @@
 // See http://creativecommons.org/licenses/MIT/ for more information.
 
 #include <stm32f37x_conf.h>
-#include <cstdlib> // abs()
+#include <cstdlib>
 
 #include "stmlib/dsp/dsp.h"
 
