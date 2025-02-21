@@ -1,0 +1,51 @@
+name: Make Wav
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_wav:
+    name: build wav file
+    runs-on: ubuntu-22.04
+    env:
+      TOOLCHAIN_PATH: ./arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/
+
+    steps:
+    
+    - uses: actions/checkout@v4
+
+    - name: submodule init
+      run: git submodule init && git submodule update
+
+    - name: setup python 2.y
+      run: |
+        sudo apt update
+        sudo apt install python2
+        wget --quiet "https://bootstrap.pypa.io/pip/2.7/get-pip.py" -O get-pip.py
+        sudo python2 get-pip.py
+        python2 -m pip install numpy
+
+    - name: info
+      run: |
+        pwd
+        which python
+        which python2
+        python --version
+        python2 --version
+        
+    
+    - name: setup arm toolchain
+      run: |
+        echo "Downloading to slightly different name to match name of extracted folder: arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi"
+        wget --quiet -O "arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi" "https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz?rev=e434b9ea4afc4ed7998329566b764309&hash=CA590209F5774EE1C96E6450E14A3E26"
+        tar -xf arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi
+
+        
+    - name: make wav
+      run: make -f stages/makefile wav
+
+    - name: upload wav
+      uses: actions/upload-artifact@v4
+      with:
+        name: stages.wav
+        path: build/stages/stages.wav
