@@ -145,6 +145,145 @@ void Process(IOBuffer::Block* block, size_t size) {
   }
 }
 
+void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
+  // Support six independant envelope generators
+  //
+  // Pressing a the button corresponding to a non-active envelope generator
+  // sets that envelope generator as the active envelope generator. Pressing a
+  // button corresponding to the active envelope generator enables all sliders.
+  // Therefore, setting all sliders and then double tapping each button will
+  // set six identical envelope generators.
+  //
+  // In general, switching egs does not immediately reflect the physical
+  // position of sliders and pots. The user must move a slider sufficiently to
+  // enable it. Activating a slider also activates its pot. Slider leds will be
+  // green when that slider is enabled.
+  //
+  // If no input cable is plugged into an envelope generator's gate input, then
+  // the previous envelope generator's gate input is used. This allows a single
+  // input to trigger multiple envelope generators.
+  
+  // The index of the currently selected envelope
+  static size_t active_envelope = 0;
+
+  // Wait 1sec at boot before checking gates
+  static int egGateWarmTime = 4000;
+  if (egGateWarmTime > 0) egGateWarmTime--;
+
+  // Disallow channel switching for one second on startup (and also every time the channel is switched - see below).
+  static int activeChannelSwitchTime = 4000;
+  if (activeChannelSwitchTime > 0) --activeChannelSwitchTime;
+
+  // Initial slider positions (set when switching channels). This allows us to determine once the
+  // user has moved a slider sufficiently.
+  // We don't use slider locking, since that feature does not support locking to an arbitrary value.
+  static float initial_slider_positions[] = {0, 0, 0, 0, 0, 0};
+  static float slider_move_threshold = 0.05f;
+
+  // For each envelope feature, whether we are currently using slider values
+  // Slider positions are ignored for the active envelope until the user moves them sufficiently to activate them.
+  // Proactively set them as enabled on bootup, however.
+  static bool slider_enabled[] = {true, true, true, true, true, true};
+
+  // Handle for channel switch presses
+  for (size_t ch = 0; ch < kNumChannels; ch++) {
+    // Check if button is pressed to switch channels or activate all sliders.
+    // Ignore switch presses if recently switched.
+    if (!activeChannelSwitchTime && ui.switches().pressed(ch)) {
+      // Once a switch is pressed, delay processing switches for 1/4 second.
+      // This is essentially a super basic debounce.
+      activeChannelSwitchTime = 1000;
+
+      if (ch == active_envelope) {      
+        // Pressing the active channel enables all sliders and pots
+        fill(&slider_enabled[0], &slider_enabled[size], true);
+      } else {
+        // Pressing an inactive channel switches to that channel
+        // Record initial slider positions after switch and set all sliders to inactive
+        active_envelope = ch;
+        fill(&slider_enabled[0], &slider_enabled[size], false);
+        for (size_t slider_index = 0; slider_index < kNumChannels; ++slider_index) {
+          initial_slider_positions[slider_index] = block->slider[slider_index];
+        }
+      }
+    }
+  }
+
+  // Update envelope parameters for active envelope.
+  if (slider_enabled[0]) {
+    eg[active_envelope].SetDelayLength(block->slider[0]);
+  }
+  if (slider_enabled[1]) {
+    eg[active_envelope].SetAttackLength(block->slider[1]);
+    eg[active_envelope].SetAttackCurve(block->pot[1]);
+  }
+  if (slider_enabled[2]) {
+    eg[active_envelope].SetHoldLength(block->slider[2]);
+  }
+  if (slider_enabled[3]) {
+    eg[active_envelope].SetDecayLength(block->slider[3]);
+    eg[active_envelope].SetDecayCurve(block->pot[3]);
+  }
+  if (slider_enabled[4]) {
+    eg[active_envelope].SetSustainLevel(block->slider[4]);
+  }
+  if (slider_enabled[5]) {
+    eg[active_envelope].SetReleaseLength(block->slider[5]);
+    eg[active_envelope].SetReleaseCurve(block->pot[5]);
+  }
+
+  // Process each channel
+  bool gate = false;
+  for (size_t ch = 0; ch < kNumChannels; ch++) {
+    
+    // Check if slider has moved sufficiently to enable the slider for the active envelope.
+    if (abs(block->slider[ch] - initial_slider_positions[ch]) > slider_move_threshold) {
+      slider_enabled[ch] = true;
+    }
+
+    // Set Slider LED to indicate whether slider is active for curent envelope.
+    ui.set_slider_led(ch, slider_enabled[ch], 1);
+
+    // Check for gates. If the input is not patched, the previous channel's
+    // gate status will be used.
+    if (egGateWarmTime == 0 && block->input_patched[ch]) {
+      gate = false;
+      for (size_t i = 0; i < size; i++) {
+        if (block->input[ch][i] & GATE_FLAG_HIGH) {
+          gate = true;
+          break;
+        }
+      }
+    }
+    eg[ch].Gate(gate);
+
+    // Set LED to indicate stage of the channel's envelope. Active channel is lit rather than off when idle.
+    switch (eg[ch].CurrentStage()) {
+      case DELAY:
+      case ATTACK:
+      case HOLD:
+      case DECAY:
+        ui.set_led(ch, LED_COLOR_GREEN);
+        break;
+      case SUSTAIN:
+        ui.set_led(ch, LED_COLOR_YELLOW);
+        break;
+      case RELEASE:
+        ui.set_led(ch, LED_COLOR_RED);
+        break;
+      default:
+        ui.set_led(ch, ch == active_envelope ? LED_COLOR_YELLOW : LED_COLOR_OFF);
+        break;
+    }
+
+    // Compute output values for each envelope
+    float value = eg[ch].Value();
+    for (size_t i = 0; i < size; i++) {
+      block->output[ch][i] = settings.dac_code(ch, value);
+    }
+  }
+}
+
 void ProcessSixEg(IOBuffer::Block* block, size_t size) {
 
   // Slider LEDs
@@ -435,6 +574,9 @@ int main(void) {
       switch ((MultiMode) settings.state().multimode) {
         case MULTI_MODE_SIX_EG:
           io_buffer.Process(&ProcessSixEg);
+          break;
+        case MULTI_MODE_SIX_INDEPENDENT_EGS:
+          io_buffer.Process(&ProcessSixIndependentEgs);
           break;
         case MULTI_MODE_OUROBOROS:
         case MULTI_MODE_OUROBOROS_ALTERNATE:

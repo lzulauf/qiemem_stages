@@ -1,7 +1,7 @@
 Mutable Instruments Stages multi-mode firmware
 ==============================================
 
-This is an unofficial firmware for Mutable Instruments Stages. It was originally created by joeSeggiola and started as a modification to let you enter and exit the "Ouroboros" mode (the **harmonic oscillator** easter egg) at runtime, while the module is powered on. Then, it evolved to add the ability to modulate harmonic ratios, enable slower free-running LFOs and provide a completely alternative mode that transforms the module into **six identical DAHDSR envelope generators**.
+This is an unofficial firmware for Mutable Instruments Stages. It was originally created by joeSeggiola and started as a modification to let you enter and exit the "Ouroboros" mode (the **harmonic oscillator** easter egg) at runtime, while the module is powered on. Then, it evolved to add the ability to modulate harmonic ratios and provide completely alternative modes that transform the module into **six DAHDSR envelope generators**.
 
 This fork further adds the following to segment generator mode:
 
@@ -138,11 +138,11 @@ Hold one of the six buttons for 5 seconds to change mode. This setting is persis
 5. [Harmonic oscillator](#harmonic-oscillator), aka Ouroboros mode
 6. Harmonic oscillator with [alternate controls](#harmonic-oscillator-with-alternate-controls)
 
-For chained modules: adjacent, connected Stages will chain if both are in mode 1 or 3 (segment generator and slow LFO) or both are in mode 2 (adv. segment generator).
-Modes 4, 5, and 6 will split a chain.
-So if you have connected modules in 1-1-2-3-6-2, 1-1 will be a chain, 2-3 will be a chain, and the last 2 will be isolated, like so: (1-1)-(2-3)-(6)-(2).
+For chained modules: adjacent, connected Stages will chain if both are in mode 1 (segment generator) or both are in mode 2 (adv. segment generator).
+Modes 3, 4, 5, and 6 will split a chain.
+So if you have connected modules in 1-1-2-2-6-2, 1-1 will be a chain, 2-2 will be a chain, and the last 2 will be isolated, like so: (1-1)-(2-2)-(6)-(2).
 Changing a module's mode will automatically update the chain configuration (the LEDs will flash like on startup).
-So, in the above example, if the module in mode 6 is changed to mode 2, the chaining configuration will become (1-1)-(2-3-2-2).
+So, in the above example, if the module in mode 6 is changed to mode 2, the chaining configuration will become (1-1)-(2-2-2-2).
 Modules with the original Stages firmware are ignored.
 
 ### Segment generator
@@ -295,18 +295,28 @@ Previously, the pot did not do anything.
 Fully CW will cause it to always fire (the original behavior) and fully CCW will cause it to never fire.
 Note that this feature was added into the official firmware in v1.2.
 
-### Slower free-running LFOs
+### Six independent DAHDSR envelope generators
+The module transforms into a generator of six independent envelopes.
 
-In this mode, Stages behaves exactly like the standard segment generator mode, except free-running LFOs (i.e. single green looping segments) are [eight time slower][5].
-This mode contains all the new features of [segment generator mode](#segment-generator).
-This fork applies this 8x slowdown to each of the LFO ranges, so while the default is the same as in joeSeggiola's original, much slower LFOs may be achieved (16 minutes), while also mixing with faster LFOs.
+Only one of the envelopes is considered selected at any time. Changes to the **slider** positions will only affect the selected envelope. Pressing a **button** will switch which envelope is selected. When switching the selected envelope, all **sliders** become disabled (led off) to avoid modifying the envelope values. Moving a slider will enable it (and its corresponding pot), updating the value of the corresponding stage in the selected envelope. Pressing the **button** of the selected envelope will immediately activate all **sliders** (and pots). Setting the **sliders** for one envelope, selecting another envelope, and then pressing the button again will effectively duplicate the settings onto the second envelope.
 
-Note: Since LFO range configuration has been integrated in as a segment property, this mode may be removed to make space for other things.
+**Sliders** controls the duration (or level) of each stage of all envelopes. From left to right:
 
-[5]: https://forum.mutable-instruments.net/t/stages/13643/54
+1. Duration of the **delay** phase
+2. Duration of the **attack** phase
+3. Duration of the **hold** phase
+4. Duration of the **decay** phase
+5. Level of the **sustain** phase
+6. Duration of the **release** phase
+
+Each duration goes from 0 to 10 seconds. The hold phase is always at maximum level (8V). Each stage can be "disabled" by setting the slider to the bottom. For example, set sliders 1 and 3 to zero to get a standard ADSR envelope.
+
+**SHAPE/TIME** pots 2, 4 and 6 control the **shape** of the corresponding ramp stages, from accelerating through linear, to decelerating. Each pot is only enabled for the current envelope if the corresponding slider is enabled for the current envelope (slider led is lit green). Pots 1, 3 and 5 are unused.
+
+**GATE** inputs are used to activate each of the six envelopes, which can be taken from the corresponding outputs on the bottom of the module. LEDs below pots show the current phase of each envelope: green for delay/attack/hold/decay, orange for sustain, red for release. The selected envelope will be yellow when idle while the inactive envelopes will be off when idle.
 
 
-### Six DAHDSR envelope generators
+### Six identical DAHDSR envelope generators
 
 The module transforms into a generator of six identical envelopes. **Sliders** controls the duration (or level) of each stage of all envelopes. From left to right:
 
