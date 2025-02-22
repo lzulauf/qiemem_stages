@@ -156,8 +156,8 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   //
   // In general, switching egs does not immediately reflect the physical
   // position of sliders and pots. The user must move a slider sufficiently to
-  // enable it. Activating a slider also activates its pot and cv inputs.
-  // Slider leds will be green when that slider is enabled.
+  // enable it. Activating a slider also activates its pot. Slider leds will be
+  // green when that slider is enabled.
   //
   // If no input cable is plugged into an envelope generator's gate input, then
   // the previous envelope generator's gate input is used. This allows a single
@@ -210,29 +210,25 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   }
 
   // Update envelope parameters for active envelope.
-  //
-  // n.b. cv inputs only apply to active envelope and only if overriding dahdsr.
-  // This allows cv to directly offset the slider position. Otherwise we would need to track separate
-  // "virtual" slider positions for each envelope.
   if (slider_enabled[0]) {
-    eg[active_envelope].SetDelayLength(block->cv_slider[0] + block->cv[0]);
+    eg[active_envelope].SetDelayLength(block->slider[0]);
   }
   if (slider_enabled[1]) {
-    eg[active_envelope].SetAttackLength(block->cv_slider[1] + block->cv[1]);
-    eg[active_envelope].SetAttackCurve (block->pot[1]);
+    eg[active_envelope].SetAttackLength(block->slider[1]);
+    eg[active_envelope].SetAttackCurve(block->pot[1]);
   }
   if (slider_enabled[2]) {
-    eg[active_envelope].SetHoldLength(block->cv_slider[2] + block->cv[2]);
+    eg[active_envelope].SetHoldLength(block->slider[2]);
   }
   if (slider_enabled[3]) {
-    eg[active_envelope].SetDecayLength(block->cv_slider[3] + block->cv[3]);
-    eg[active_envelope].SetDecayCurve  (block->pot[3]);
+    eg[active_envelope].SetDecayLength(block->slider[3]);
+    eg[active_envelope].SetDecayCurve(block->pot[3]);
   }
   if (slider_enabled[4]) {
-    eg[active_envelope].SetSustainLevel(block->cv_slider[4] + block->cv[4]);
+    eg[active_envelope].SetSustainLevel(block->slider[4]);
   }
   if (slider_enabled[5]) {
-    eg[active_envelope].SetReleaseLength(block->cv_slider[5] + block->cv[5]);
+    eg[active_envelope].SetReleaseLength(block->slider[5]);
     eg[active_envelope].SetReleaseCurve(block->pot[5]);
   }
 
