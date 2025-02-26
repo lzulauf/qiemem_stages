@@ -39,7 +39,7 @@
 #include "stages/io_buffer.h"
 #include "stages/oscillator.h"
 #include "stages/resources.h"
-#include "stages/envelope.h"
+#include "stages/envelope_manager.h"
 #include "stages/segment_generator.h"
 #include "stages/settings.h"
 #include "stages/ui.h"
@@ -61,7 +61,7 @@ HysteresisQuantizer2 note_quantizer[kNumChannels + kMaxNumSegments];
 SegmentGenerator segment_generator[kNumChannels];
 Oscillator oscillator[kNumChannels];
 IOBuffer io_buffer;
-Envelope eg[kNumChannels];
+EnvelopeManager eg_manager;
 SerialLink left_link;
 SerialLink right_link;
 Settings settings;
@@ -156,12 +156,18 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   //
   // In general, switching egs does not immediately reflect the physical
   // position of sliders and pots. The user must move a slider sufficiently to
-  // enable it. Activating a slider also activates its pot. Slider leds will be
-  // green when that slider is enabled.
+  // enable it. Activating a slider also activates its pot and cv inputs.
+  // Slider leds will be green when that slider is enabled.
   //
   // If no input cable is plugged into an envelope generator's gate input, then
   // the previous envelope generator's gate input is used. This allows a single
   // input to trigger multiple envelope generators.
+
+  // Keep track of whether latest values have yet to be saved.
+  // -1 means data is not dirty.
+  // a positive time (>=0) means data is dirty and is the number of ticks since it first became dirty.
+  static int save_timer = -1;
+  static int save_time_wait = 20000; // 5 seconds
   
   // The index of the currently selected envelope
   static size_t active_envelope = 0;
@@ -170,20 +176,22 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   static int egGateWarmTime = 4000;
   if (egGateWarmTime > 0) egGateWarmTime--;
 
-  // Disallow channel switching for one second on startup (and also every time the channel is switched - see below).
+  // Disallow channel switching for one second on startup (and also every time
+  // the channel is switched - see below).
   static int activeChannelSwitchTime = 4000;
   if (activeChannelSwitchTime > 0) --activeChannelSwitchTime;
 
-  // Initial slider positions (set when switching channels). This allows us to determine once the
-  // user has moved a slider sufficiently.
-  // We don't use slider locking, since that feature does not support locking to an arbitrary value.
-  static float initial_slider_positions[] = {0, 0, 0, 0, 0, 0};
+  // Initial slider positions (set when switching channels). This allows us to
+  // determine once the user has moved a slider sufficiently.
+  // We don't use slider locking, since that feature does not support locking to
+  // an arbitrary value.
+  static float initial_slider_positions[kNumChannels] = {0, 0, 0, 0, 0, 0};
   static float slider_move_threshold = 0.05f;
 
   // For each envelope feature, whether we are currently using slider values
-  // Slider positions are ignored for the active envelope until the user moves them sufficiently to activate them.
-  // Proactively set them as enabled on bootup, however.
-  static bool slider_enabled[] = {true, true, true, true, true, true};
+  // Slider positions are ignored for the active envelope until the user moves
+  // them sufficiently to activate them.
+  static bool slider_enabled[kNumChannels] = {false, false, false, false, false, false};
 
   // Handle for channel switch presses
   for (size_t ch = 0; ch < kNumChannels; ch++) {
@@ -210,33 +218,93 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   }
 
   // Update envelope parameters for active envelope.
+  bool did_modify_state = false;
   if (slider_enabled[0]) {
-    eg[active_envelope].SetDelayLength(block->slider[0]);
+    // TODO - temporarily set leds to indicate modifications.
+    // did_modify_state |= eg_manager.SetDelayLength(active_envelope, block->slider[0]);
+    bool result = eg_manager.SetDelayLength(active_envelope, block->slider[0]);
+    if (result) {
+      did_modify_state = true;
+      ui.set_led(0, LED_COLOR_RED);
+    }
+    else {
+      ui.set_led(0, LED_COLOR_GREEN);
+    }
   }
   if (slider_enabled[1]) {
-    eg[active_envelope].SetAttackLength(block->slider[1]);
-    eg[active_envelope].SetAttackCurve(block->pot[1]);
+    // TODO - temporarily set leds to indicate modifications.
+    // did_modify_state |= eg_manager.SetAttackLength(active_envelope, block->slider[1]);
+    bool result = eg_manager.SetAttackLength(active_envelope, block->slider[1]);
+    if (result) {
+      did_modify_state = true;
+      ui.set_led(1, LED_COLOR_RED);
+    }
+    else {
+      ui.set_led(1, LED_COLOR_GREEN);
+    }
+    did_modify_state |= eg_manager.SetAttackCurve(active_envelope, block->pot[1]);
   }
   if (slider_enabled[2]) {
-    eg[active_envelope].SetHoldLength(block->slider[2]);
+    // TODO - temporarily set leds to indicate modifications.
+    // did_modify_state |= eg_manager.SetHoldLength(active_envelope, block->slider[2]);
+    bool result = eg_manager.SetHoldLength(active_envelope, block->slider[2]);
+    if (result) {
+      did_modify_state = true;
+      ui.set_led(2, LED_COLOR_RED);
+    }
+    else {
+      ui.set_led(2, LED_COLOR_GREEN);
+    }
   }
   if (slider_enabled[3]) {
-    eg[active_envelope].SetDecayLength(block->slider[3]);
-    eg[active_envelope].SetDecayCurve(block->pot[3]);
+    // TODO - temporarily set leds to indicate modifications.
+    // did_modify_state |= eg_manager.SetDecayLength(active_envelope, block->slider[3]);
+    bool result = eg_manager.SetDecayLength(active_envelope, block->slider[3]);
+    if (result) {
+      did_modify_state = true;
+      ui.set_led(3, LED_COLOR_RED);
+    }
+    else {
+      ui.set_led(3, LED_COLOR_GREEN);
+    }
+    did_modify_state |= eg_manager.SetDecayCurve(active_envelope, block->pot[3]);
   }
   if (slider_enabled[4]) {
-    eg[active_envelope].SetSustainLevel(block->slider[4]);
+    // TODO - temporarily set leds to indicate modifications.
+    // did_modify_state |= eg_manager.SetSustainLevel(active_envelope, block->slider[4]);
+    bool result = eg_manager.SetSustainLevel(active_envelope, block->slider[4]);
+    if (result) {
+      did_modify_state = true;
+      ui.set_led(4, LED_COLOR_RED);
+    }
+    else {
+      ui.set_led(4, LED_COLOR_GREEN);
+    }
   }
   if (slider_enabled[5]) {
-    eg[active_envelope].SetReleaseLength(block->slider[5]);
-    eg[active_envelope].SetReleaseCurve(block->pot[5]);
+    // TODO - temporarily set leds to indicate modifications.
+    // did_modify_state |= eg_manager.SetReleaseLength(active_envelope, block->slider[5]);
+    bool result = eg_manager.SetReleaseLength(active_envelope, block->slider[5]);
+    if (result) {
+      did_modify_state = true;
+      ui.set_led(5, LED_COLOR_RED);
+    }
+    else {
+      ui.set_led(5, LED_COLOR_GREEN);
+    }
+    did_modify_state |= eg_manager.SetReleaseCurve(active_envelope, block->pot[5]);
+  }
+  // Start/Reset the save timer if state was modified
+  if (did_modify_state) {
+    save_timer = 0;
   }
 
   // Process each channel
   bool gate = false;
   for (size_t ch = 0; ch < kNumChannels; ch++) {
     
-    // Check if slider has moved sufficiently to enable the slider for the active envelope.
+    // Check if slider has moved sufficiently to enable the slider for the
+    // active envelope.
     if (abs(block->slider[ch] - initial_slider_positions[ch]) > slider_move_threshold) {
       slider_enabled[ch] = true;
     }
@@ -255,10 +323,12 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
         }
       }
     }
-    eg[ch].Gate(gate);
+
+    Envelope& envelope = eg_manager.GetEnvelope(ch);
+    envelope.Gate(gate);
 
     // Set LED to indicate stage of the channel's envelope. Active channel is lit rather than off when idle.
-    switch (eg[ch].CurrentStage()) {
+    switch (envelope.CurrentStage()) {
       case DELAY:
       case ATTACK:
       case HOLD:
@@ -277,9 +347,37 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
     }
 
     // Compute output values for each envelope
-    float value = eg[ch].Value();
+    float value = envelope.Value();
     for (size_t i = 0; i < size; i++) {
       block->output[ch][i] = settings.dac_code(ch, value);
+    }
+  }
+
+  // if (save_timer >= 0) {
+  //   if (++save_timer >= save_time_wait) {
+  //     save_timer = -1;
+  //     settings.SaveState();
+  //   }
+  // }
+
+  // Temporarily use led indicators to show when save is pending/has occurred.
+  if (save_timer >= 0) {
+    save_timer += 1;
+    if (save_timer < save_time_wait) {
+      for (uint16_t ch=0; ch<kNumChannels; ++ch) {
+        ui.set_led(ch, LED_COLOR_YELLOW);
+      }
+    }
+    else if (save_timer == save_time_wait) {
+      settings.SaveState();
+    } 
+    else if (save_timer < save_time_wait + 2000) {
+      for (uint16_t ch=0; ch<kNumChannels; ++ch) {
+        ui.set_led(ch, LED_COLOR_RED);
+      }
+    }
+    else {
+      save_timer = -1;
     }
   }
 }
@@ -287,31 +385,32 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
 void ProcessSixEg(IOBuffer::Block* block, size_t size) {
 
   // Slider LEDs
-  ui.set_slider_led(0, eg[0].HasDelay  (), 1);
-  ui.set_slider_led(1, eg[0].HasAttack (), 1);
-  ui.set_slider_led(2, eg[0].HasHold   (), 1);
-  ui.set_slider_led(3, eg[0].HasDecay  (), 1);
-  ui.set_slider_led(4, eg[0].HasSustain(), 1);
-  ui.set_slider_led(5, eg[0].HasRelease(), 1);
+  ui.set_slider_led(0, eg_manager.GetEnvelope(0).HasDelay  (), 1);
+  ui.set_slider_led(1, eg_manager.GetEnvelope(0).HasAttack (), 1);
+  ui.set_slider_led(2, eg_manager.GetEnvelope(0).HasHold   (), 1);
+  ui.set_slider_led(3, eg_manager.GetEnvelope(0).HasDecay  (), 1);
+  ui.set_slider_led(4, eg_manager.GetEnvelope(0).HasSustain(), 1);
+  ui.set_slider_led(5, eg_manager.GetEnvelope(0).HasRelease(), 1);
 
   // Wait 1sec at boot before checking gates
   static int egGateWarmTime = 4000;
   if (egGateWarmTime > 0) egGateWarmTime--;
 
+  // Set pots params
+  eg_manager.SetAllAttackCurve (block->pot[1]);
+  eg_manager.SetAllDecayCurve  (block->pot[3]);
+  eg_manager.SetAllReleaseCurve(block->pot[5]);
+
+  // Set slider params
+  eg_manager.SetAllDelayLength  (block->cv_slider[0]);
+  eg_manager.SetAllAttackLength (block->cv_slider[1]);
+  eg_manager.SetAllHoldLength   (block->cv_slider[2]);
+  eg_manager.SetAllDecayLength  (block->cv_slider[3]);
+  eg_manager.SetAllSustainLevel (block->cv_slider[4]);
+  eg_manager.SetAllReleaseLength(block->cv_slider[5]);
+
   for (size_t ch = 0; ch < kNumChannels; ch++) {
 
-    // Set pots params
-    eg[ch].SetAttackCurve (block->pot[1]);
-    eg[ch].SetDecayCurve  (block->pot[3]);
-    eg[ch].SetReleaseCurve(block->pot[5]);
-
-    // Set slider params
-    eg[ch].SetDelayLength  (block->cv_slider[0]);
-    eg[ch].SetAttackLength (block->cv_slider[1]);
-    eg[ch].SetHoldLength   (block->cv_slider[2]);
-    eg[ch].SetDecayLength  (block->cv_slider[3]);
-    eg[ch].SetSustainLevel (block->cv_slider[4]);
-    eg[ch].SetReleaseLength(block->cv_slider[5]);
 
     // Gate or button?
     bool gate = ui.switches().pressed(ch);
@@ -323,17 +422,18 @@ void ProcessSixEg(IOBuffer::Block* block, size_t size) {
         }
       }
     }
-    eg[ch].Gate(gate);
+    Envelope& envelope = eg_manager.GetEnvelope(ch);
+    envelope.Gate(gate);
     ui.set_led(ch, gate ? LED_COLOR_RED : LED_COLOR_OFF);
 
     // Compute value and set as output
-    float value = eg[ch].Value();
+    float value = envelope.Value();
     for (size_t i = 0; i < size; i++) {
       block->output[ch][i] = settings.dac_code(ch, value);
     }
 
     // Display current stage
-    switch (eg[ch].CurrentStage()) {
+    switch (envelope.CurrentStage()) {
       case DELAY:
       case ATTACK:
       case HOLD:
@@ -545,8 +645,8 @@ void Init() {
   std::fill(&no_gate[0], &no_gate[kBlockSize], GATE_FLAG_LOW);
 
   cv_reader.Init(&settings, &chain_state);
-
-  ui.Init(&settings, &chain_state, &cv_reader);
+  eg_manager.Init(&settings);
+  ui.Init(&settings, &chain_state, &cv_reader, &eg_manager);
 
   if (freshly_baked && !skip_factory_test) {
     factory_test.Start(&settings, &cv_reader, &gate_inputs, &ui);

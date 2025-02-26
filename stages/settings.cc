@@ -60,6 +60,13 @@ bool Settings::Init() {
   
   state_.color_blind = 0;
   state_.multimode = (uint8_t) MULTI_MODE_STAGES;
+
+  for (size_t i = 0; i< kNumChannels; ++i) {
+    fill(
+        &state_.independent_eg_state[i][0],
+        &state_.independent_eg_state[i][kNumChannels],
+        0);
+  }
   
   bool success = chunk_storage_.Init(&persistent_data_, &state_);
   
