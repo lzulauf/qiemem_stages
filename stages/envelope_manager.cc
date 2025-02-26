@@ -190,12 +190,6 @@ namespace stages {
     }
 
     return false;
-
-    // TODO remove this dead code.
-    // n.b. since we write to state regardless of whether or not we return True,
-    // the existing value is always trailing the value. We will only detect a
-    // change above noise_tolerance if moved quickly.
-    // return abs(converted - existing_value) > noise_tolerance;
   }
 
 }  // namespace stages

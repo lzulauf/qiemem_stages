@@ -220,78 +220,24 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
   // Update envelope parameters for active envelope.
   bool did_modify_state = false;
   if (slider_enabled[0]) {
-    // TODO - temporarily set leds to indicate modifications.
-    // did_modify_state |= eg_manager.SetDelayLength(active_envelope, block->slider[0]);
-    bool result = eg_manager.SetDelayLength(active_envelope, block->slider[0]);
-    if (result) {
-      did_modify_state = true;
-      ui.set_led(0, LED_COLOR_RED);
-    }
-    else {
-      ui.set_led(0, LED_COLOR_GREEN);
-    }
+    did_modify_state |= eg_manager.SetDelayLength(active_envelope, block->slider[0]);
   }
   if (slider_enabled[1]) {
-    // TODO - temporarily set leds to indicate modifications.
-    // did_modify_state |= eg_manager.SetAttackLength(active_envelope, block->slider[1]);
-    bool result = eg_manager.SetAttackLength(active_envelope, block->slider[1]);
-    if (result) {
-      did_modify_state = true;
-      ui.set_led(1, LED_COLOR_RED);
-    }
-    else {
-      ui.set_led(1, LED_COLOR_GREEN);
-    }
+    did_modify_state |= eg_manager.SetAttackLength(active_envelope, block->slider[1]);
     did_modify_state |= eg_manager.SetAttackCurve(active_envelope, block->pot[1]);
   }
   if (slider_enabled[2]) {
-    // TODO - temporarily set leds to indicate modifications.
-    // did_modify_state |= eg_manager.SetHoldLength(active_envelope, block->slider[2]);
-    bool result = eg_manager.SetHoldLength(active_envelope, block->slider[2]);
-    if (result) {
-      did_modify_state = true;
-      ui.set_led(2, LED_COLOR_RED);
-    }
-    else {
-      ui.set_led(2, LED_COLOR_GREEN);
-    }
+    did_modify_state |= eg_manager.SetHoldLength(active_envelope, block->slider[2]);
   }
   if (slider_enabled[3]) {
-    // TODO - temporarily set leds to indicate modifications.
-    // did_modify_state |= eg_manager.SetDecayLength(active_envelope, block->slider[3]);
-    bool result = eg_manager.SetDecayLength(active_envelope, block->slider[3]);
-    if (result) {
-      did_modify_state = true;
-      ui.set_led(3, LED_COLOR_RED);
-    }
-    else {
-      ui.set_led(3, LED_COLOR_GREEN);
-    }
+    did_modify_state |= eg_manager.SetDecayLength(active_envelope, block->slider[3]);
     did_modify_state |= eg_manager.SetDecayCurve(active_envelope, block->pot[3]);
   }
   if (slider_enabled[4]) {
-    // TODO - temporarily set leds to indicate modifications.
-    // did_modify_state |= eg_manager.SetSustainLevel(active_envelope, block->slider[4]);
-    bool result = eg_manager.SetSustainLevel(active_envelope, block->slider[4]);
-    if (result) {
-      did_modify_state = true;
-      ui.set_led(4, LED_COLOR_RED);
-    }
-    else {
-      ui.set_led(4, LED_COLOR_GREEN);
-    }
+    did_modify_state |= eg_manager.SetSustainLevel(active_envelope, block->slider[4]);
   }
   if (slider_enabled[5]) {
-    // TODO - temporarily set leds to indicate modifications.
-    // did_modify_state |= eg_manager.SetReleaseLength(active_envelope, block->slider[5]);
-    bool result = eg_manager.SetReleaseLength(active_envelope, block->slider[5]);
-    if (result) {
-      did_modify_state = true;
-      ui.set_led(5, LED_COLOR_RED);
-    }
-    else {
-      ui.set_led(5, LED_COLOR_GREEN);
-    }
+    did_modify_state |= eg_manager.SetReleaseLength(active_envelope, block->slider[5]);
     did_modify_state |= eg_manager.SetReleaseCurve(active_envelope, block->pot[5]);
   }
   // Start/Reset the save timer if state was modified
@@ -353,31 +299,10 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
     }
   }
 
-  // if (save_timer >= 0) {
-  //   if (++save_timer >= save_time_wait) {
-  //     save_timer = -1;
-  //     settings.SaveState();
-  //   }
-  // }
-
-  // Temporarily use led indicators to show when save is pending/has occurred.
   if (save_timer >= 0) {
-    save_timer += 1;
-    if (save_timer < save_time_wait) {
-      for (uint16_t ch=0; ch<kNumChannels; ++ch) {
-        ui.set_led(ch, LED_COLOR_YELLOW);
-      }
-    }
-    else if (save_timer == save_time_wait) {
-      settings.SaveState();
-    } 
-    else if (save_timer < save_time_wait + 2000) {
-      for (uint16_t ch=0; ch<kNumChannels; ++ch) {
-        ui.set_led(ch, LED_COLOR_RED);
-      }
-    }
-    else {
+    if (++save_timer >= save_time_wait) {
       save_timer = -1;
+      settings.SaveState();
     }
   }
 }
