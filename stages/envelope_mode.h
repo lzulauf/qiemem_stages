@@ -70,8 +70,8 @@ class EnvelopeMode {
   // The index of the currently selected envelope
   size_t active_envelope;
 
-  // Wait 1sec at boot before checking gates
-  int egGateWarmTime;
+  // bootup delay before processing.
+  int warmTime;
 
   // Disallow channel switching for one second on startup (and also every time
   // the channel is switched - see below).

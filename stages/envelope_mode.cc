@@ -67,11 +67,11 @@ namespace stages {
 
   void EnvelopeMode::ReInit() {
     // Don't process gates for one second after boot or switching modes.
-    egGateWarmTime = 4000;
+    warmTime = 2000;
 
     // Disallow channel switching for one second on startup (and also every time
     // the channel is switched - see below).
-    activeChannelSwitchTime = 4000;
+    activeChannelSwitchTime = 0;
 
     // Disable save timer
     save_timer = -1;
@@ -252,16 +252,18 @@ namespace stages {
     // the previous envelope generator's gate input is used. This allows a single
     // input to trigger multiple envelope generators.
 
-    // Disallow channel switching for one second on startup (and also every time
-    // the channel is switched - see below).
-    if (activeChannelSwitchTime > 0) --activeChannelSwitchTime;
-
-    // Wait 1sec at mode startup before checking gates
-    if (egGateWarmTime > 0) {
-        --egGateWarmTime;
-        return;
+    // Don't do any processing during warmup.
+    if (warmTime > 0) {
+      --warmTime;
+      for (size_t ch = 0; ch < kNumChannels; ++ch) {
+        for (size_t i = 0; i < size; ++i) {
+          block->output[ch][i] = settings_->dac_code(ch, 0.f);
+        }
+      }
+      return;
     }
 
+    if (activeChannelSwitchTime > 0) --activeChannelSwitchTime;
 
     // If we need to set initial slider positions (from changing modes), record
     // the current slider positions.
@@ -340,7 +342,7 @@ namespace stages {
 
       // Check for gates. If the input is not patched, the previous channel's
       // gate status will be used.
-      if (egGateWarmTime == 0 && block->input_patched[ch]) {
+      if (block->input_patched[ch]) {
         gate = false;
         for (size_t i = 0; i < size; i++) {
           if (block->input[ch][i] & GATE_FLAG_HIGH) {
@@ -389,6 +391,17 @@ namespace stages {
 
   void EnvelopeMode::ProcessSixIdenticalEgs_(IOBuffer::Block* block, size_t size) {
 
+    // Don't do any processing during warmup.
+    if (warmTime > 0) {
+      --warmTime;
+      for (size_t ch = 0; ch < kNumChannels; ++ch) {
+        for (size_t i = 0; i < size; ++i) {
+          block->output[ch][i] = settings_->dac_code(ch, 0.f);
+        }
+      }
+      return;
+    }
+    
     // Slider LEDs
     ui_->set_slider_led(0, GetEnvelope_(0).HasDelay  (), 1);
     ui_->set_slider_led(1, GetEnvelope_(0).HasAttack (), 1);
@@ -396,9 +409,6 @@ namespace stages {
     ui_->set_slider_led(3, GetEnvelope_(0).HasDecay  (), 1);
     ui_->set_slider_led(4, GetEnvelope_(0).HasSustain(), 1);
     ui_->set_slider_led(5, GetEnvelope_(0).HasRelease(), 1);
-
-    // Wait 1sec at mode startup before checking gates
-    if (egGateWarmTime > 0) egGateWarmTime--;
 
     // Set pots params
     SetAllAttackCurve_ (block->pot[1]);
@@ -413,12 +423,10 @@ namespace stages {
     SetAllSustainLevel_ (block->cv_slider[4]);
     SetAllReleaseLength_(block->cv_slider[5]);
 
-    for (size_t ch = 0; ch < kNumChannels; ch++) {
-
-
+    for (size_t ch = 0; ch < kNumChannels; ++ch) {
       // Gate or button?
       bool gate = ui_->switches().pressed(ch);
-      if (!gate && egGateWarmTime == 0 && block->input_patched[ch]) {
+      if (!gate && block->input_patched[ch]) {
         for (size_t i = 0; i < size; i++) {
           if (block->input[ch][i] & GATE_FLAG_HIGH) {
             gate = true;
