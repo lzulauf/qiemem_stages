@@ -38,7 +38,6 @@
 #include "stages/drivers/switches.h"
 
 #include "stages/settings.h"
-#include "stages/envelope_manager.h"
 
 const int32_t kLongPressDurationForMultiModeToggle = 5000;
 const int32_t kDiscreteStateBrightDur = 4000;
@@ -53,6 +52,7 @@ enum UiMode {
 };
 
 class ChainState;
+class EnvelopeManager;
 
 class Ui {
  public:
