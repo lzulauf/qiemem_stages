@@ -26,13 +26,14 @@
 //
 // User interface
 
-#include "stages/ui.h"
-#include "stages/chain_state.h"
-
 #include <algorithm>
 
+#include "stages/chain_state.h"
 #include "stages/drivers/leds.h"
+#include "stages/envelope_mode.h"
 #include "stages/settings.h"
+#include "stages/ui.h"
+
 #include "stmlib/system/system_clock.h"
 
 using namespace std;

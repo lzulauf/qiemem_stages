@@ -40,11 +40,11 @@
 #include "stages/envelope.h"
 #include "stages/io_buffer.h"
 #include "stages/modes.h"
-#include "stages/ui.h"
 
 namespace stages {
 
 class Settings;
+class Ui;
 
 class EnvelopeMode {
  public:
