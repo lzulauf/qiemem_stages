@@ -47,7 +47,7 @@ const MultiMode Ui::multimodes_[6] = {
   MULTI_MODE_STAGES, // Mode enabled by long pressing the left-most button
   MULTI_MODE_STAGES_ADVANCED,
   MULTI_MODE_SIX_INDEPENDENT_EGS,
-  MULTI_MODE_SIX_EG,
+  MULTI_MODE_SIX_IDENTICAL_EGS,
   MULTI_MODE_OUROBOROS,
   MULTI_MODE_OUROBOROS_ALTERNATE, // Mode enabled by long pressing the right-most button
 };
@@ -466,7 +466,8 @@ void Ui::UpdateLEDs() {
             slider_led_counter_[i] ? LED_COLOR_GREEN : LED_COLOR_OFF);
       }
 
-    } else if (multimode == MULTI_MODE_SIX_EG || multimode == MULTI_MODE_SIX_INDEPENDENT_EGS) {
+    } else if (multimode == MULTI_MODE_SIX_IDENTICAL_EGS ||
+               multimode == MULTI_MODE_SIX_INDEPENDENT_EGS) {
       // LEDs update for 6EG and 6IEG modes
       for (size_t i = 0; i < kNumChannels; ++i) {
         leds_.set(LED_GROUP_UI + i, led_color_[i]);

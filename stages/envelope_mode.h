@@ -40,6 +40,7 @@
 #include "stages/envelope.h"
 #include "stages/io_buffer.h"
 #include "stages/modes.h"
+#include "stages/ui.h"
 
 namespace stages {
 
@@ -52,6 +53,43 @@ class EnvelopeMode {
 
   void Init(Settings* settings);
   void ReInit();
+  void SetUI(Ui* ui);
+  void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size);
+  void ProcessSixIdenticalEgs(IOBuffer::Block* block, size_t size);
+
+ private:
+  Settings* settings_;
+  Ui* ui_;
+  Envelope eg_[kNumChannels];
+
+  // Keep track of whether latest values have yet to be saved.
+  // -1 means data is not dirty.
+  // a positive time (>=0) means data is dirty and is the number of ticks since it first became dirty.
+  int save_timer;
+  
+  // The index of the currently selected envelope
+  size_t active_envelope;
+
+  // Wait 1sec at boot before checking gates
+  int egGateWarmTime;
+
+  // Disallow channel switching for one second on startup (and also every time
+  // the channel is switched - see below).
+  int activeChannelSwitchTime;
+
+  // Initial slider positions (set when switching channels). This allows us to
+  // determine once the user has moved a slider sufficiently.
+  // We don't use slider locking, since that feature does not support locking to
+  // an arbitrary value.
+  bool need_to_set_initial_slider_positions;
+  float initial_slider_positions[kNumChannels];
+
+  // For each envelope feature, whether we are currently using slider values
+  // Slider positions are ignored for the active envelope until the user moves
+  // them sufficiently to activate them.
+  bool slider_enabled[kNumChannels];
+
+  bool SetIndependentEGState_(uint8_t channel, uint8_t state_offset, float value);
 
   // Sets the given value on all envelopes. Does NOT store the values in state.
   // This is used in identical eg mode where the envelopes reflect the current
@@ -59,15 +97,15 @@ class EnvelopeMode {
   //
   // It is recommended to use these functions over setting envelope values
   // directly.
-  void SetAllDelayLength(float value);
-  void SetAllAttackLength(float value);
-  void SetAllAttackCurve(float value);
-  void SetAllHoldLength(float value);
-  void SetAllDecayLength(float value);
-  void SetAllDecayCurve(float value);
-  void SetAllSustainLevel(float value);
-  void SetAllReleaseLength(float value);
-  void SetAllReleaseCurve(float value);
+  void SetAllDelayLength_(float value);
+  void SetAllAttackLength_(float value);
+  void SetAllAttackCurve_(float value);
+  void SetAllHoldLength_(float value);
+  void SetAllDecayLength_(float value);
+  void SetAllDecayCurve_(float value);
+  void SetAllSustainLevel_(float value);
+  void SetAllReleaseLength_(float value);
+  void SetAllReleaseCurve_(float value);
 
   // Sets the given value on the given envelope channel. Also stores the value
   // in state. This is used in individual eg mode where the envelopes do not
@@ -78,23 +116,18 @@ class EnvelopeMode {
   //
   // It is recommended to use these functions over setting envelope values
   // directly.
-  bool SetDelayLength(uint8_t channel, float value);
-  bool SetAttackLength(uint8_t channel, float value);
-  bool SetAttackCurve(uint8_t channel, float value);
-  bool SetHoldLength(uint8_t channel, float value);
-  bool SetDecayLength(uint8_t channel, float value);
-  bool SetDecayCurve(uint8_t channel, float value);
-  bool SetSustainLevel(uint8_t channel, float value);
-  bool SetReleaseLength(uint8_t channel, float value);
-  bool SetReleaseCurve(uint8_t channel, float value);
+  bool SetDelayLength_(uint8_t channel, float value);
+  bool SetAttackLength_(uint8_t channel, float value);
+  bool SetAttackCurve_(uint8_t channel, float value);
+  bool SetHoldLength_(uint8_t channel, float value);
+  bool SetDecayLength_(uint8_t channel, float value);
+  bool SetDecayCurve_(uint8_t channel, float value);
+  bool SetSustainLevel_(uint8_t channel, float value);
+  bool SetReleaseLength_(uint8_t channel, float value);
+  bool SetReleaseCurve_(uint8_t channel, float value);
 
-  Envelope& GetEnvelope(uint8_t channel) { return eg_[channel]; }
+  Envelope& GetEnvelope_(uint8_t channel) { return eg_[channel]; }
 
- private:
-  Settings* settings_;
-  Envelope eg_[kNumChannels];
-
-  bool SetIndependentEGState_(uint8_t channel, uint8_t state_offset, float value);
 
   DISALLOW_COPY_AND_ASSIGN(EnvelopeMode);
 };
