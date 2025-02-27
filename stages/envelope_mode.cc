@@ -73,7 +73,7 @@ namespace stages {
     // the channel is switched - see below).
     activeChannelSwitchTime = 4000;
 
-    // Reset save timer
+    // Disable save timer
     save_timer = -1;
 
     // The index of the currently selected envelope. 
@@ -252,12 +252,16 @@ namespace stages {
     // the previous envelope generator's gate input is used. This allows a single
     // input to trigger multiple envelope generators.
 
-    // Wait 1sec at mode startup before checking gates
-    if (egGateWarmTime > 0) egGateWarmTime--;
-
     // Disallow channel switching for one second on startup (and also every time
     // the channel is switched - see below).
     if (activeChannelSwitchTime > 0) --activeChannelSwitchTime;
+
+    // Wait 1sec at mode startup before checking gates
+    if (egGateWarmTime > 0) {
+        --egGateWarmTime;
+        return;
+    }
+
 
     // If we need to set initial slider positions (from changing modes), record
     // the current slider positions.
