@@ -54,8 +54,8 @@ class EnvelopeMode {
   void Init(Settings* settings);
   void ReInit();
   void SetUI(Ui* ui);
-  void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size);
-  void ProcessSixIdenticalEgs(IOBuffer::Block* block, size_t size);
+
+  void ProcessEnvelopes(IOBuffer::Block* block, size_t size);
 
  private:
   Settings* settings_;
@@ -88,6 +88,9 @@ class EnvelopeMode {
   // Slider positions are ignored for the active envelope until the user moves
   // them sufficiently to activate them.
   bool slider_enabled[kNumChannels];
+
+  void ProcessSixIndependentEgs_(IOBuffer::Block* block, size_t size);
+  void ProcessSixIdenticalEgs_(IOBuffer::Block* block, size_t size);
 
   bool SetIndependentEGState_(uint8_t channel, uint8_t state_offset, float value);
 

@@ -145,12 +145,8 @@ void Process(IOBuffer::Block* block, size_t size) {
   }
 }
 
-void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
-  eg_mode.ProcessSixIndependentEgs(block, size);
-}
-
-void ProcessSixIdenticalEgs(IOBuffer::Block* block, size_t size) {
-  eg_mode.ProcessSixIdenticalEgs(block, size);
+void ProcessEnvelopes(IOBuffer::Block* block, size_t size) {
+  eg_mode.ProcessEnvelopes(block, size);
 }
 
 const int kNumOuroborosRatios = 11;
@@ -372,10 +368,8 @@ int main(void) {
     } else {
       switch ((MultiMode) settings.state().multimode) {
         case MULTI_MODE_SIX_IDENTICAL_EGS:
-          io_buffer.Process(&ProcessSixIdenticalEgs);
-          break;
         case MULTI_MODE_SIX_INDEPENDENT_EGS:
-          io_buffer.Process(&ProcessSixIndependentEgs);
+          io_buffer.Process(&ProcessEnvelopes);
           break;
         case MULTI_MODE_OUROBOROS:
         case MULTI_MODE_OUROBOROS_ALTERNATE:

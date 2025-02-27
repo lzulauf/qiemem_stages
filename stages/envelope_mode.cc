@@ -111,6 +111,18 @@ namespace stages {
     ui_ = ui;
   }
 
+
+  void EnvelopeMode::ProcessEnvelopes(IOBuffer::Block* block, size_t size) {
+    switch (settings_->state().multimode) {
+      case MULTI_MODE_SIX_INDEPENDENT_EGS:
+        ProcessSixIndependentEgs_(block, size);
+        break;
+      case MULTI_MODE_SIX_IDENTICAL_EGS:
+        ProcessSixIdenticalEgs_(block, size);
+        break;
+    }
+  }
+
   void EnvelopeMode::SetAllDelayLength_(float value) {
     for (uint8_t envelope = 0; envelope < kNumChannels; ++envelope) {
       eg_[envelope].SetDelayLength(value);
@@ -222,7 +234,7 @@ namespace stages {
     return false;
   }
 
-  void EnvelopeMode::ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
+  void EnvelopeMode::ProcessSixIndependentEgs_(IOBuffer::Block* block, size_t size) {
     // Support six independant envelope generators
     //
     // Pressing a the button corresponding to a non-active envelope generator
@@ -371,7 +383,7 @@ namespace stages {
     }
   }
 
-  void EnvelopeMode::ProcessSixIdenticalEgs(IOBuffer::Block* block, size_t size) {
+  void EnvelopeMode::ProcessSixIdenticalEgs_(IOBuffer::Block* block, size_t size) {
 
     // Slider LEDs
     ui_->set_slider_led(0, GetEnvelope_(0).HasDelay  (), 1);
