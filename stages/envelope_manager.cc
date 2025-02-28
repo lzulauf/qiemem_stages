@@ -23,7 +23,7 @@
 // See http://creativecommons.org/licenses/MIT/ for more information.
 
 
-#include "stages/envelope_mode.h"
+#include "stages/envelope_manager.h"
 #include "stages/ui.h"
 #include "stages/chain_state.h"
 

@@ -270,7 +270,7 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
       }
     }
 
-    Envelope& envelope = eg_manager.GetEnvelope(ch);
+    Envelope& envelope = eg_manager.get_envelope(ch);
     envelope.Gate(gate);
 
     // Set LED to indicate stage of the channel's envelope. Active channel is lit rather than off when idle.
@@ -310,12 +310,12 @@ void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
 void ProcessSixEg(IOBuffer::Block* block, size_t size) {
 
   // Slider LEDs
-  ui.set_slider_led(0, eg_manager.GetEnvelope(0).HasDelay  (), 1);
-  ui.set_slider_led(1, eg_manager.GetEnvelope(0).HasAttack (), 1);
-  ui.set_slider_led(2, eg_manager.GetEnvelope(0).HasHold   (), 1);
-  ui.set_slider_led(3, eg_manager.GetEnvelope(0).HasDecay  (), 1);
-  ui.set_slider_led(4, eg_manager.GetEnvelope(0).HasSustain(), 1);
-  ui.set_slider_led(5, eg_manager.GetEnvelope(0).HasRelease(), 1);
+  ui.set_slider_led(0, eg_manager.get_envelope(0).HasDelay  (), 1);
+  ui.set_slider_led(1, eg_manager.get_envelope(0).HasAttack (), 1);
+  ui.set_slider_led(2, eg_manager.get_envelope(0).HasHold   (), 1);
+  ui.set_slider_led(3, eg_manager.get_envelope(0).HasDecay  (), 1);
+  ui.set_slider_led(4, eg_manager.get_envelope(0).HasSustain(), 1);
+  ui.set_slider_led(5, eg_manager.get_envelope(0).HasRelease(), 1);
 
   // Wait 1sec at boot before checking gates
   static int egGateWarmTime = 4000;
@@ -347,7 +347,7 @@ void ProcessSixEg(IOBuffer::Block* block, size_t size) {
         }
       }
     }
-    Envelope& envelope = eg_manager.GetEnvelope(ch);
+    Envelope& envelope = eg_manager.get_envelope(ch);
     envelope.Gate(gate);
     ui.set_led(ch, gate ? LED_COLOR_RED : LED_COLOR_OFF);
 
