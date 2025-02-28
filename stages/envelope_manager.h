@@ -44,6 +44,7 @@
 namespace stages {
 
 class Settings;
+class Ui;
 
 class EnvelopeManager {
  public:
@@ -52,6 +53,46 @@ class EnvelopeManager {
 
   void Init(Settings* settings);
   void ReInit();
+  void SetUI(Ui* ui);
+
+  void ProcessEnvelopes(IOBuffer::Block* block, size_t size);
+
+ private:
+  Settings* settings_;
+  Ui* ui_;
+  Envelope eg_[kNumChannels];
+
+  // Keep track of whether latest values have yet to be saved.
+  // -1 means data is not dirty.
+  // a positive time (>=0) means data is dirty and is the number of ticks since it first became dirty.
+  int save_timer_;
+  
+  // The index of the currently selected envelope
+  size_t active_envelope_;
+
+  // bootup delay before processing.
+  int warm_time_;
+
+  // Disallow channel switching for one second on startup (and also every time
+  // the channel is switched - see below).
+  int active_channel_switch_time_;
+
+  // Initial slider positions (set when switching channels). This allows us to
+  // determine once the user has moved a slider sufficiently.
+  // We don't use slider locking, since that feature does not support locking to
+  // an arbitrary value.
+  bool need_to_set_initial_slider_positions_;
+  float initial_slider_positions_[kNumChannels];
+
+  // For each envelope feature, whether we are currently using slider values
+  // Slider positions are ignored for the active envelope until the user moves
+  // them sufficiently to activate them.
+  bool slider_enabled_[kNumChannels];
+
+  void ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size);
+  void ProcessSixIdenticalEgs(IOBuffer::Block* block, size_t size);
+
+  bool SetIndependentEGState(uint8_t channel, uint8_t state_offset, float value);
 
   // Sets the given value on all envelopes. Does NOT store the values in state.
   // This is used in identical eg mode where the envelopes reflect the current
@@ -90,11 +131,6 @@ class EnvelopeManager {
 
   Envelope& get_envelope(uint8_t channel) { return eg_[channel]; }
 
- private:
-  Settings* settings_;
-  Envelope eg_[kNumChannels];
-
-  bool SetIndependentEGState(uint8_t channel, uint8_t state_offset, float value);
 
   DISALLOW_COPY_AND_ASSIGN(EnvelopeManager);
 };
