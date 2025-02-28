@@ -38,7 +38,7 @@
 #include "stages/drivers/switches.h"
 
 #include "stages/settings.h"
-#include "stages/envelope_manager.h"
+#include "stages/envelope_mode.h"
 
 const int32_t kLongPressDurationForMultiModeToggle = 5000;
 const int32_t kDiscreteStateBrightDur = 4000;
@@ -59,7 +59,7 @@ class Ui {
   Ui() { }
   ~Ui() { }
 
-  void Init(Settings* settings, ChainState* chain_state, CvReader* cv_reader, EnvelopeManager* eg_manager);
+  void Init(Settings* settings, ChainState* chain_state, CvReader* cv_reader, EnvelopeMode* eg_mode);
   void Poll();
   void DoEvents();
 
@@ -120,7 +120,7 @@ class Ui {
   Settings* settings_;
   ChainState* chain_state_;
   CvReader* cv_reader_;
-  EnvelopeManager* eg_manager_;
+  EnvelopeMode* eg_mode_;
 
   bool dirty_;
 
