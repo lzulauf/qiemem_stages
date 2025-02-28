@@ -24,11 +24,9 @@
 
 // -----------------------------------------------------------------------------
 
-// DAHDSR Manager
-// (Delay, Attack, Hold, Decay, Sustain, Release)
-//
-// The DAHDSR envelope generator is a multi-channel, 6-stage (per channel) envelope
-// generator. Each stage is independently configurable.
+// EnvelopeMode
+// Manages modes with DAHDSR (Delay, Attack, Hold, Decay, Sustain, Release)
+// envelopes.
 
 #ifndef STAGES_ENVELOPE_MODE_H
 #define STAGES_ENVELOPE_MODE_H
@@ -87,7 +85,7 @@ class EnvelopeMode {
   bool SetReleaseLength(uint8_t channel, float value);
   bool SetReleaseCurve(uint8_t channel, float value);
 
-  Envelope& GetEnvelope(uint8_t channel) { return eg_[channel]; }
+  Envelope& get_envelope(uint8_t channel) { return eg_[channel]; }
 
  private:
   Settings* settings_;
