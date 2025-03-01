@@ -87,15 +87,17 @@ struct PersistentData {
 // - byte 9: -- padding --
 // - byte 10: release level
 // - byte 11: release curve
-const uint8_t IEG_DELAY_LENGTH = 0;
-const uint8_t IEG_ATTACK_LENGTH = 2;
-const uint8_t IEG_ATTACK_CURVE = 3;
-const uint8_t IEG_HOLD_LENGTH = 4;
-const uint8_t IEG_DECAY_LENGTH = 6;
-const uint8_t IEG_DECAY_CURVE = 7;
-const uint8_t IEG_SUSTAIN_LEVEL = 8;
-const uint8_t IEG_RELEASE_LENGTH = 10;
-const uint8_t IEG_RELEASE_CURVE = 11;
+enum IEGParam : uint8_t {
+  IEG_DELAY_LENGTH = 0,
+  IEG_ATTACK_LENGTH = 2,
+  IEG_ATTACK_CURVE = 3,
+  IEG_HOLD_LENGTH = 4,
+  IEG_DECAY_LENGTH = 6,
+  IEG_DECAY_CURVE = 7,
+  IEG_SUSTAIN_LEVEL = 8,
+  IEG_RELEASE_LENGTH = 10,
+  IEG_RELEASE_CURVE = 11,
+};
 
 #define is_bipolar(seg_config) seg_config & 0x08
 
