@@ -83,11 +83,11 @@ namespace stages {
   void EnvelopeMode::ProcessSixIndependentEgs(IOBuffer::Block* block, size_t size) {
     // Support six independant envelope generators
     //
-    // Pressing a the button corresponding to a non-active envelope generator
-    // sets that envelope generator as the active envelope generator. Pressing a
-    // button corresponding to the active envelope generator enables all sliders.
-    // Therefore, setting all sliders and then double tapping each button will
-    // set six identical envelope generators.
+    // Pressing a button corresponding to a non-active envelope generator sets
+    // that envelope generator as the active envelope generator. Pressing the
+    // button corresponding to the active envelope generator enables all
+    // sliders.  Therefore, setting all sliders and then double tapping each
+    // button will set six identical envelope generators.
     //
     // In general, switching egs does not immediately reflect the physical
     // position of sliders and pots. The user must move a slider sufficiently to
