@@ -72,12 +72,40 @@ struct PersistentData {
 //  - b00110000 (0x0c00) (12) ->  quantization scale
 //
 
+// Independent EGs state is 12 bytes per envelope (there is one envelope per
+// channel). Each pair of bytes corresponds to slider and pot values. three of
+// the bytes are not used but are kept as padding to keep the bytes in pairs.
+// - byte 0: delay length
+// - byte 1: -- padding --
+// - byte 2: attack length
+// - byte 3: attack curve
+// - byte 4: hold length
+// - byte 5: -- padding --
+// - byte 6: decay length
+// - byte 7: decay curve
+// - byte 8: sustain level
+// - byte 9: -- padding --
+// - byte 10: release level
+// - byte 11: release curve
+enum IEGParam : uint8_t {
+  IEG_DELAY_LENGTH = 0,
+  IEG_ATTACK_LENGTH = 2,
+  IEG_ATTACK_CURVE = 3,
+  IEG_HOLD_LENGTH = 4,
+  IEG_DECAY_LENGTH = 6,
+  IEG_DECAY_CURVE = 7,
+  IEG_SUSTAIN_LEVEL = 8,
+  IEG_RELEASE_LENGTH = 10,
+  IEG_RELEASE_CURVE = 11,
+};
+
 #define is_bipolar(seg_config) seg_config & 0x08
 
 struct State {
   uint16_t segment_configuration[kNumChannels];
   uint8_t color_blind;
   uint8_t multimode;
+  uint8_t independent_eg_state[kNumChannels][12];
   enum { tag = 0x54415453 };  // STAT
 };
 

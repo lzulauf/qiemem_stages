@@ -60,7 +60,7 @@ const LedColor Ui::palette_[4] = {
   LED_COLOR_OFF,
 };
 
-void Ui::Init(Settings* settings, ChainState* chain_state, CvReader* cv_reader) {
+void Ui::Init(Settings* settings, ChainState* chain_state, CvReader* cv_reader, EnvelopeManager* eg_manager) {
   leds_.Init();
   switches_.Init();
 
@@ -72,6 +72,7 @@ void Ui::Init(Settings* settings, ChainState* chain_state, CvReader* cv_reader) 
   mode_ = UI_MODE_NORMAL;
   chain_state_ = chain_state;
   cv_reader_ = cv_reader;
+  eg_manager_ = eg_manager;
 
   if (switches_.pressed_immediate(0)) {
     State* state = settings_->mutable_state();
@@ -322,6 +323,7 @@ void Ui::MultiModeToggle(const uint8_t i) {
     state->multimode = (uint8_t) multimodes_[i];
     settings_->SaveState();
     chain_state_->start_reinit();
+    eg_manager_->ReInit();
   }
 }
 
