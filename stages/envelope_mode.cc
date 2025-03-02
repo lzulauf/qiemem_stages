@@ -41,7 +41,7 @@ namespace stages {
   }
 
   void EnvelopeMode::ReInit() {
-    // Don't process gates for one second after boot or switching modes.
+    // Don't process gates for half a second after boot or switching modes.
     warm_time_ = 2000;
 
     // Disallow channel switching for one second on startup (and also every time
