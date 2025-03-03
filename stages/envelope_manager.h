@@ -25,7 +25,7 @@
 // -----------------------------------------------------------------------------
 
 // EnvelopeManager
-// Manages modes with DAHDSR (Delay, Attack, Hold, Decay, Sustain, Release)
+// Manages a collection of DAHDSR (Delay, Attack, Hold, Decay, Sustain, Release)
 // envelopes.
 //
 // The DAHDSR envelope generator is a multi-channel, 6-stage (per channel) envelope
@@ -35,11 +35,9 @@
 #define STAGES_ENVELOPE_MANAGER_H
 
 #include "stmlib/stmlib.h"
-#include "stmlib/system/storage.h"
 
 #include "stages/envelope.h"
 #include "stages/io_buffer.h"
-#include "stages/modes.h"
 
 namespace stages {
 

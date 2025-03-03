@@ -25,17 +25,7 @@
 
 #include "stages/envelope_manager.h"
 #include "stages/ui.h"
-#include "stages/chain_state.h"
-
-#include <algorithm>
-
-#include "stages/drivers/leds.h"
 #include "stages/settings.h"
-#include "stmlib/system/system_clock.h"
-
-using namespace std;
-using namespace stmlib;
-
 
 namespace stages {
 
