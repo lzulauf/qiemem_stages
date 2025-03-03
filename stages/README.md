@@ -133,8 +133,8 @@ Hold one of the six buttons for 5 seconds to change mode. This setting is persis
 
 1. [Segment generator](#segment-generator)
 2. [Advanced Segment generator](#advanced-segment-generator)
-3. Segment generator with [slower free-running LFOs](#slower-free-running-lfos)
-4. [Six DAHDSR envelope generators](#six-dahdsr-envelope-generators)
+3. [Six independent DAHDSR envelope generators](#six-independent-dahdsr-envelope-generators)
+4. [Six identical DAHDSR envelope generators](#six-identical-dahdsr-envelope-generators)
 5. [Harmonic oscillator](#harmonic-oscillator), aka Ouroboros mode
 6. Harmonic oscillator with [alternate controls](#harmonic-oscillator-with-alternate-controls)
 
