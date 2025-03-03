@@ -42,10 +42,15 @@ namespace stages {
 
   void EnvelopeMode::ReInit() {
     // Don't process gates for half a second after boot or switching modes.
+    // This is necessary because:
+    // 1. There can be initial noise in the gate pins on startup.
+    // 2. Sliders read 0 at first, causing erroneous detection of slider
+    // movement.
+    // Only necessary on startup, but simplifies code to apply on mode switching.
     warm_time_ = 2000;
 
     // Disallow channel switching for one second on startup (and also every time
-    // the channel is switched - see below).
+    // the channel is switched - see below). 
     active_channel_switch_time_ = 0;
 
     // Disable save timer
